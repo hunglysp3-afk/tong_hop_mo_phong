@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AC Generator Simulator - Pro Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --primary: #2c3e50; --accent: #e74c3c; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        .app-container { display: grid; grid-template-columns: 1fr 340px; grid-template-rows: 1fr 260px; gap: 12px; padding: 12px; flex: 1; }
+        .simulation-area { background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid #ddd; position: relative; }
+        #simCanvas { width: 100%; height: 100%; }
+        .control-panel { background: white; padding: 18px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); grid-row: 1 / 3; grid-column: 2; overflow-y: auto; border: 1px solid #ddd; }
+        .observation-area { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); grid-column: 1; display: grid; grid-template-columns: 1fr 280px; gap: 15px; border: 1px solid #ddd; }
+        .chart-container { position: relative; height: 100%; }
+        .mode-btn { width: 100%; padding: 10px; margin-bottom: 6px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; text-align: left; background: #fff; font-weight: bold; }
+        .mode-btn.active { background: var(--primary); color: white; }
+        .formula-card { background: #f8f9fa; padding: 10px; border-radius: 8px; font-size: 13px; border-left: 4px solid var(--primary); }
+        .val-highlight { color: #d35400; font-weight: bold; font-family: monospace; }
+        .instant-val { color: #2980b9; font-weight: bold; font-family: monospace; }
+        input[type="range"] { width: 100%; margin: 8px 0; cursor: pointer; }
+canvas, input[type="range"] {
+    touch-action: none; /* Ngăn trình duyệt cuộn trang khi đang thao tác trên canvas hoặc slider */
+}
+
+@media (max-width: 600px) {
+    .app-container {
+        display: flex;
+        flex-direction: column;
+        height: auto; /* Cho phép cuộn trang theo chiều dọc trên điện thoại */
+        overflow-y: scroll;
+    }
+    .simulation-area {
+        height: 300px; /* Cố định chiều cao vùng mô phỏng trên mobile */
+    }
+    .control-panel {
+        width: 100%;
+        box-sizing: border-box;
+    }
+}    
+
+</style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="simulation-area"><canvas id="simCanvas"></canvas></div>
+
+    <div class="control-panel">
+        <h3 style="margin-top:0; font-size:16px;">🚀 Chế độ học tập</h3>
+        <button class="mode-btn active" id="m1">1. Quan sát (ω, N)</button>
+        <button class="mode-btn" id="m2">2. Thí nghiệm (Hiện đồ thị e)</button>
+        <button class="mode-btn" id="m3">3. Khám phá (Mở khóa B, S)</button>
+        <hr>
+        <label style="font-size:12px; font-weight:bold;">Tốc độ ω: <span id="txtW">0.03</span></label>
+        <input type="range" id="rangeW" min="0.01" max="0.1" step="0.005" value="0.03">
+        
+        <label style="font-size:12px; font-weight:bold;">Số vòng dây N: <span id="txtN">100</span></label>
+        <input type="range" id="rangeN" min="50" max="400" step="10" value="100">
+
+        <div id="extraSliders" style="display:none; border-top:1px dashed #ccc; padding-top:10px; margin-top:10px;">
+            <label style="font-size:12px; font-weight:bold;">Cảm ứng từ B:</label>
+            <input type="range" id="rangeB" min="0.5" max="2.5" step="0.1" value="1">
+            <label style="font-size:12px; font-weight:bold;">Diện tích S:</label>
+            <input type="range" id="rangeS" min="0.5" max="2.0" step="0.1" value="1">
+        </div>
+        
+        <button id="playBtn" style="width:100%; margin-top:15px; padding:12px; background:var(--accent); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">TẠM DỪNG</button>
+    </div>
+
+    <div class="observation-area">
+        <div class="chart-container"><canvas id="chartCanvas"></canvas></div>
+        <div class="formula-card">
+            <b>Dữ liệu học thuật:</b><br>
+            <div id="academicData" style="margin-top:8px; line-height:1.6;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const chartCtx = document.getElementById('chartCanvas').getContext('2d');
+
+    let angle = 0, omega = 0.03, B = 1, S = 1, N = 100, mode = 1, isRunning = true;
+    let dataE = [], dataPhi = [], labels = [];
+    let chart;
+
+    function initChart() {
+        chart = new Chart(chartCtx, {
+            type: 'line',
+            data: { labels: labels, datasets: [
+                { label: 'e (V)', data: dataE, borderColor: '#f1c40f', borderWidth: 2, pointRadius: 0, fill: false },
+                { label: 'Φ (Wb)', data: dataPhi, borderColor: '#e74c3c', borderWidth: 2, pointRadius: 0, fill: false, hidden: true }
+            ]},
+            options: {
+                responsive: true, maintainAspectRatio: false, animation: false,
+                scales: {
+                    y: { 
+                        grid: { color: (c) => c.tick.value === 0 ? '#000' : '#eee', lineWidth: (c) => c.tick.value === 0 ? 2 : 1 }
+                    },
+                    x: { display: false }
+                }
+            }
+        });
+    }
+
+    function drawMagnet3D(x, y, label, color, isRight) {
+        const w = 80, h = 180, d = 25;
+        ctx.fillStyle = color === "#e74c3c" ? "#c0392b" : "#2980b9";
+        ctx.beginPath();
+        if(!isRight) { ctx.moveTo(x+w, y-h/2); ctx.lineTo(x+w+d, y-h/2-10); ctx.lineTo(x+w+d, y+h/2-10); ctx.lineTo(x+w, y+h/2); }
+        else { ctx.moveTo(x, y-h/2); ctx.lineTo(x-d, y-h/2-10); ctx.lineTo(x-d, y+h/2-10); ctx.lineTo(x, y+h/2); }
+        ctx.fill();
+        ctx.fillStyle = color; ctx.fillRect(x, y-h/2, w, h);
+        ctx.fillStyle = "white"; ctx.font = "bold 30px Arial"; ctx.fillText(label, x+25, y+10);
+    }
+
+    // HÀM VẼ VÀNH KHUYÊN (SLIP RINGS)
+    function drawRing(x, y, r, color) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.ellipse(x, y, r, r/3, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        // Chổi quét (Brushes)
+        ctx.fillStyle = "#34495e";
+        ctx.fillRect(x + r, y - 2, 12, 5);
+    }
+
+    function render() {
+        if (canvas.width !== canvas.clientWidth) { canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight; }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const cx = canvas.width/2 - 60, cy = canvas.height/2 - 30;
+
+        let phiMax = B * S;
+        let e0 = (N * B * S * omega); 
+        let drawPhiMax = phiMax * 2;
+        let drawE0 = e0 * 0.8;
+
+        let phi = phiMax * Math.cos(angle);
+        let e_val = e0 * Math.sin(angle);
+
+        // Đường sức từ đỏ khi Phi Max
+        ctx.strokeStyle = Math.abs(phi) > (phiMax * 0.97) ? "#e74c3c" : "#dfe6e9";
+        ctx.setLineDash([10, 5]);
+        for(let i=-2; i<=2; i++) {
+            ctx.beginPath(); ctx.moveTo(cx-150, cy+i*35); ctx.lineTo(cx+220, cy+i*35); ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        drawMagnet3D(cx - 220, cy, "N", "#e74c3c", false);
+        drawMagnet3D(cx + 220, cy, "S", "#3498db", true);
+        
+        const fw = 160 * S, fh = 110;
+        let viewW = Math.sin(angle);
+        let p3 = { x: cx + (fw/2)*viewW, y: cy + fh/2 }, p4 = { x: cx - (fw/2)*viewW, y: cy + fh/2 };
+        let p1 = { x: p4.x, y: p4.y - fh }, p2 = { x: p3.x, y: p3.y - fh };
+
+        // Vẽ trục quay
+        ctx.strokeStyle = "#95a5a6"; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(cx, cy-120); ctx.lineTo(cx, cy+180); ctx.stroke();
+
+        // Vẽ khung dây
+        ctx.strokeStyle = "#d35400"; ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.lineTo(p3.x, p3.y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p4.x, p4.y); ctx.stroke();
+
+        // Mạch điện nối đèn
+        const ry1 = cy + 115, ry2 = cy + 145, r = 16;
+        let a1 = { x: cx + r*Math.cos(angle + 1.57), y: ry1 + (r/3)*Math.sin(angle + 1.57) };
+        let a2 = { x: cx + r*Math.cos(angle - 1.57), y: ry2 + (r/3)*Math.sin(angle - 1.57) };
+
+        // Dây nối
+        ctx.strokeStyle = "#000"; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(p4.x, p4.y); ctx.quadraticCurveTo(p4.x, p4.y+20, a1.x, a1.y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(p3.x, p3.y); ctx.quadraticCurveTo(p3.x, p3.y+40, a2.x, a2.y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx+r, ry1); ctx.lineTo(cx+160, ry1); ctx.lineTo(cx+160, cy+60); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx+r, ry2); ctx.lineTo(cx+140, ry2); ctx.lineTo(cx+140, cy+60); ctx.stroke();
+
+        // VÀNH KHUYÊN (Vẽ sau để đè lên dây)
+        drawRing(cx, ry1, r, "#f1c40f");
+        drawRing(cx, ry2, r, "#f39c12");
+
+        // --- LOGIC BÓNG ĐÈN THÔNG MINH ---
+// Độ sáng tức thời tỉ lệ với sin(angle), nhưng cường độ trần tỉ lệ với e0
+let brightness = Math.abs(Math.sin(angle)) * (e0 / 4); 
+
+// Tạo màu vàng trắng nếu điện áp e0 cao
+ctx.fillStyle = `rgba(255, 255, ${e0 > 3 ? 150 : 0}, ${Math.min(brightness, 1)})`;
+
+// Thêm hiệu ứng hào quang (Glow)
+ctx.shadowBlur = brightness * 15; 
+ctx.shadowColor = "yellow";
+
+ctx.beginPath(); 
+ctx.arc(cx + 150, cy + 40, 20, 0, Math.PI * 2); 
+ctx.fill();
+
+// Tắt hiệu ứng đổ bóng để không ảnh hưởng đến các hình vẽ sau đó
+ctx.shadowBlur = 0; 
+ctx.strokeStyle = "#000"; 
+ctx.stroke();
+        // Cập nhật trục Oy động
+        if(chart && mode > 1) {
+            let currentMax = mode === 3 ? Math.max(drawE0, drawPhiMax * 3) : drawE0;
+            chart.options.scales.y.min = -(currentMax * 1.25);
+            chart.options.scales.y.max = currentMax * 1.25;
+        }
+
+        // Đồ thị và cập nhật dữ liệu
+        if(isRunning) {
+            angle += omega;
+            if(mode > 1) {
+                labels.push(""); 
+                dataE.push(drawE0 * Math.sin(angle)); 
+                dataPhi.push(drawPhiMax * Math.cos(angle) * 3); 
+                let limit = Math.floor(31.4 / omega);
+                if(labels.length > limit) { labels.shift(); dataE.shift(); dataPhi.shift(); }
+                chart.update();
+            }
+        }
+
+        // CẬP NHẬT GIÁ TRỊ TỨC THỜI TRONG BẢNG
+       const academicBox = document.getElementById('academicData');
+if (mode === 1) {
+    academicBox.innerHTML = `Φ biến thiên tạo dòng điện.<br><b>E₀ hiện tại: ${e0.toFixed(2)}V</b>`;
+} else {
+    // Hiển thị cả giá trị Cực đại và giá trị Tức thời (t)
+    academicBox.innerHTML = 
+        `Φ<sub>max</sub>: <span class="val-highlight">${phiMax.toFixed(2)}</span> Wb<br>` +
+        `E₀: <span class="val-highlight">${e0.toFixed(2)}</span> V<br>` +
+        `<hr>` +
+        `Φ<sub>(t)</sub>: <b style="color:#2980b9">${phi.toFixed(3)}</b> Wb<br>` +
+        `e<sub>(t)</sub>: <b style="color:#2980b9">${e_val.toFixed(3)}</b> V<br>` +
+        `<hr>` +
+        `Φ = ${phiMax.toFixed(2)}.cos(ωt)<br>e = ${e0.toFixed(2)}.sin(ωt)`;
+}
+
+        requestAnimationFrame(render);
+    }
+
+    const setMode = (m) => {
+        mode = m;
+        document.querySelectorAll('.mode-btn').forEach((b, i) => b.classList.toggle('active', i+1 === m));
+        document.getElementById('extraSliders').style.display = m === 3 ? 'block' : 'none';
+        dataE.length = 0; dataPhi.length = 0; labels.length = 0;
+        if(chart) {
+            chart.data.datasets[0].hidden = (m === 1);
+            chart.data.datasets[1].hidden = (m < 3);
+            chart.update();
+        }
+    };
+
+    document.getElementById('m1').onclick = () => setMode(1);
+    document.getElementById('m2').onclick = () => setMode(2);
+    document.getElementById('m3').onclick = () => setMode(3);
+    document.getElementById('rangeW').oninput = (e) => { omega = parseFloat(e.target.value); document.getElementById('txtW').innerText = omega; };
+    document.getElementById('rangeN').oninput = (e) => { N = parseInt(e.target.value); document.getElementById('txtN').innerText = N; };
+    document.getElementById('rangeB').oninput = (e) => B = parseFloat(e.target.value);
+    document.getElementById('rangeS').oninput = (e) => S = parseFloat(e.target.value);
+    document.getElementById('playBtn').onclick = function() { isRunning = !isRunning; this.innerText = isRunning ? "TẠM DỪNG" : "TIẾP TỤC"; };
+
+    initChart(); setMode(1); render();
+</script>
+</body>
+</html>
