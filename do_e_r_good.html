@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Phòng Thí Nghiệm Vật Lý Mobile</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body { margin: 0; display: flex; flex-direction: column; font-family: sans-serif; background: #111; color: white; overflow: hidden; touch-action: none; }
+        #canvas-wrap { flex-grow: 1; background: #f0f2f5; position: relative; width: 100%; height: 60vh; }
+        #controls { height: 40vh; background: #1e1e1e; border-top: 3px solid #333; padding: 10px; box-sizing: border-box; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 10px; }
+        .box { background: #2d2d2d; padding: 10px; border-radius: 8px; flex: 1; min-width: 160px; border: 1px solid #444; }
+        .status { width: 100%; padding: 8px; border-radius: 6px; text-align: center; font-weight: bold; font-size: 0.8rem; margin-bottom: 5px; }
+        .on { background: #064e3b; color: #6ee7b7; }
+        .off { background: #333; color: #aaa; }
+        .warn { background: #450a0a; color: #fca5a5; animation: blink 0.5s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+        button { width: 100%; padding: 10px; margin: 3px 0; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; font-size: 0.8rem; }
+        #data-lock { width: 100%; position: relative; margin-top: 5px; border-radius: 8px; overflow: hidden; background: #000; min-height: 120px; }
+        #lock-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; padding: 10px; box-sizing: border-box; }
+        #report-content { filter: blur(15px); pointer-events: none; transition: 0.3s; width: 100%; background: white; color: black; padding: 10px; box-sizing: border-box; }
+        .unlocked #report-content { filter: blur(0); pointer-events: auto; }
+        .unlocked #lock-screen { display: none; }
+        table { width: 100%; font-size: 10px; text-align: center; border-collapse: collapse; }
+        th, td { border: 1px solid #ccc; padding: 4px; }
+        #chart-wrap { height: 150px; background: white; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div id="canvas-wrap"></div>
+
+<div id="controls">
+    <div id="stLabel" class="status off">MẠCH HỞ</div>
+    
+    <div class="box">
+        <label style="font-size: 0.8rem;">Biến trở R: <b id="rVal">20</b> Ω</label>
+        <input type="range" id="rSlider" min="2" max="60" step="0.5" value="20" style="width:100%;">
+        <button style="background:#0284c7" onclick="record()">Ghi số liệu</button>
+        <button style="background:#dc2626" onclick="resetLab()">Làm lại (Đề mới)</button>
+    </div>
+
+    <div id="data-lock">
+        <div id="lock-screen">
+            <span style="font-size: 0.9rem;">🔒 KHÓA BÁO CÁO</span>
+            <input type="password" id="passInput" placeholder="Mã GV..." style="margin:5px 0; padding:6px; width:70%; text-align:center;">
+            <button style="background:#10b981; width:70%;" onclick="checkPass()">Mở Khóa</button>
+        </div>
+        <div id="report-content">
+            <div id="report-area">
+                <h5 style="margin:0; text-align:center;">BÁO CÁO PIN: <span id="taskType"></span></h5>
+                <table id="dataTable"><thead><tr><th>STT</th><th>I(A)</th><th>U(V)</th></tr></thead><tbody></tbody></table>
+                <div id="chart-wrap"><canvas id="uiChart"></canvas></div>
+                <div id="verifyCode" style="font-size:7px; color:gray; margin-top:3px; word-break:break-all;"></div>
+            </div>
+            <button style="background:#10b981; margin-top:5px;" onclick="submitReport()">Gửi Báo Cáo</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const TEACHER_PASS = "vatly2026";
+const BATTERY_LIB = [
+    { n: "ALPHA", e: 1.58, r: 0.45 }, { n: "BETA", e: 1.55, r: 0.65 },
+    { n: "GAMMA", e: 1.42, r: 0.25 }, { n: "DELTA", e: 1.35, r: 1.10 }
+];
+
+let activeE, activeR, activeName, devices = [], wires = [], dataPoints = [], dragging = null, chart;
+let curI = 0, curU = 0, isDamaged = false;
+
+function setup() {
+    initBattery();
+    let container = document.getElementById('canvas-wrap');
+    let cv = createCanvas(container.offsetWidth, container.offsetHeight);
+    cv.parent('canvas-wrap');
+    layoutDevices();
+    initChart();
+}
+
+function layoutDevices() {
+    let w = width, h = height;
+    let dw = w * 0.35; // Chiều rộng thiết bị tỉ lệ theo màn hình
+    let dh = dw * 0.7; // Chiều cao tỉ lệ
+    devices = [];
+    devices.push(new Device('NGUỒN PIN', w * 0.25, h * 0.25, 'PIN', dw, dh));
+    devices.push(new Device('AMPE KẾ', w * 0.75, h * 0.25, 'AMPERE', dw, dh));
+    devices.push(new Device('BIẾN TRỞ R', w * 0.25, h * 0.75, 'RESISTOR', dw, dh));
+    devices.push(new Device('VÔN KẾ', w * 0.75, h * 0.75, 'VOLT', dw, dh));
+}
+
+function windowResized() {
+    let container = document.getElementById('canvas-wrap');
+    resizeCanvas(container.offsetWidth, container.offsetHeight);
+    layoutDevices();
+}
+
+function initBattery() {
+    let b = BATTERY_LIB[Math.floor(Math.random() * BATTERY_LIB.length)];
+    activeE = b.e; activeR = b.r; activeName = b.n;
+    document.getElementById('taskType').innerText = activeName;
+}
+
+class Device {
+    constructor(name, x, y, type, w, h) {
+        this.name = name; this.x = x - w/2; this.y = y - h/2; this.type = type;
+        this.w = w; this.h = h;
+        this.nodes = [{id:type+'_P',l:'+',rx:w*0.25,ry:h*0.8,c:'red',wc:0},{id:type+'_N',l:'-',rx:w*0.75,ry:h*0.8,c:'black',wc:0}];
+    }
+    draw() {
+        fill(45); stroke(80); strokeWeight(2); rect(this.x, this.y, this.w, this.h, 8);
+        if (this.type === 'AMPERE' || this.type === 'VOLT') {
+            fill(10); stroke(100); rect(this.x+this.w*0.1, this.y+this.h*0.3, this.w*0.8, this.h*0.4, 3);
+            textAlign(CENTER);
+            if (isDamaged && this.type === 'AMPERE') { fill(255,0,0); textSize(this.h*0.2); text("OVER", this.x+this.w*0.5, this.y+this.h*0.58); }
+            else if (curI === 0 && this.type === 'AMPERE' && wires.length > 2) { fill(255,100,0); textSize(this.h*0.18); text("REV", this.x+this.w*0.5, this.y+this.h*0.58); }
+            else { 
+                fill(this.type==='AMPERE'?0:255, this.type==='AMPERE'?255:0,0); textSize(this.h*0.25); 
+                text(this.type==='AMPERE'?curI.toFixed(3):curU.toFixed(2), this.x+this.w*0.5, this.y+this.h*0.6);
+            }
+        }
+        fill(220); noStroke(); textAlign(CENTER); textSize(this.h*0.12); text(this.name, this.x+this.w*0.5, this.y+this.h*0.22);
+        this.nodes.forEach(n => {
+            let ax = this.x+n.rx, ay = this.y+n.ry;
+            fill(n.c); stroke(150); ellipse(ax, ay, this.h*0.22);
+            fill(255); noStroke(); textSize(this.h*0.1); text(n.l, ax, ay+this.h*0.04);
+        });
+    }
+}
+
+function draw() {
+    background(245);
+    let R_ext = parseFloat(document.getElementById('rSlider').value);
+    document.getElementById('rVal').innerText = R_ext;
+    let conns = {};
+    wires.forEach(w => { if(!conns[w.f])conns[w.f]=[]; if(!conns[w.t])conns[w.t]=[]; conns[w.f].push(w.t); conns[w.t].push(w.f); });
+    function getPaths() {
+        let q = [['PIN_P']], res = [];
+        while(q.length > 0) {
+            let p = q.shift(), last = p[p.length-1];
+            if(last==='PIN_N') res.push(p);
+            (conns[last]||[]).forEach(next => {
+                if(!p.includes(next)) {
+                    let sib = next.includes('_P')?next.replace('_P','_N') : next.replace('_N','_P');
+                    if(!p.includes(sib)) q.push([...p, next, sib]); else q.push([...p, next]);
+                }
+            });
+        } return res;
+    }
+    let allP = getPaths(), st = document.getElementById('stLabel');
+    isDamaged = allP.some(p => p.some(n=>n.includes('AMPERE')) && !p.some(n=>n.includes('RESISTOR')));
+    let isVSer = allP.length > 0 && allP.every(p => p.some(n=>n.includes('VOLT')));
+    if(isDamaged){ curI=4; curU=0; st.innerText="ĐOẢN MẠCH!"; st.className="status warn"; }
+    else if(isVSer){ curI=0; curU=activeE; st.innerText="VÔN KẾ NỐI TIẾP"; st.className="status off"; }
+    else if(allP.length > 0){
+        let m = allP.find(p => p.some(n=>n.includes('AMPERE')) && p.some(n=>n.includes('RESISTOR')));
+        if(m && m.indexOf('AMPERE_P') < m.indexOf('AMPERE_N')) {
+            curI = activeE/(R_ext + activeR + 0.12);
+            let vP = isLinked('VOLT_P','PIN_P',conns), vN = isLinked('VOLT_N','PIN_N',conns);
+            curU = (vP && vN)?(activeE - curI*activeR):0;
+            st.innerText="ĐANG CHẠY"; st.className="status on";
+        } else { curI=0; curU=0; st.innerText="NGƯỢC CỰC/HỞ"; st.className="status off"; }
+    } else {
+        curI=0; if(isLinked('VOLT_P','PIN_P',conns) && isLinked('VOLT_N','PIN_N',conns)){ curU=activeE; st.innerText="ĐO E"; st.className="on status"; }
+        else { curU=0; st.innerText="MẠCH HỞ"; st.className="off status"; }
+    }
+    strokeWeight(3); noFill();
+    wires.forEach(w => { stroke(w.c); bezier(w.x1, w.y1, w.x1, w.y1+40, w.x2, w.y2+40, w.x2, w.y2); });
+    if(dragging) { stroke(180); line(dragging.x, dragging.y, mouseX, mouseY); }
+    devices.forEach(d => d.draw());
+}
+
+function isLinked(s,e,c){ let v=new Set(),q=[s]; while(q.length){ let curr=q.shift(); if(curr===e)return true; if(!v.has(curr)){v.add(curr);(c[curr]||[]).forEach(n=>q.push(n));} } return false; }
+
+function handleStart() {
+    if (mouseY > height) return true; // Chạm vào control panel thì nhường quyền
+    for (let d of devices) {
+        for (let n of d.nodes) {
+            if (dist(mouseX, mouseY, d.x+n.rx, d.y+n.ry) < 30) {
+                if (n.wc >= 3) { alert("Max 3 dây!"); return false; }
+                dragging = { id: n.id, x: d.x+n.rx, y: d.y+n.ry, c: n.c, nRef: n };
+                return false;
+            }
+        }
+    }
+}
+function mousePressed() { return handleStart(); }
+function touchStarted() { return handleStart(); }
+
+function handleEnd() {
+    if (dragging) {
+        for (let d of devices) {
+            for (let n of d.nodes) {
+                if (dist(mouseX, mouseY, d.x+n.rx, d.y+n.ry) < 30 && n.id !== dragging.id) {
+                    wires.push({ f: dragging.id, t: n.id, x1: dragging.x, y1: dragging.y, x2: d.x+n.rx, y2: d.y+n.ry, c: dragging.c });
+                    dragging.nRef.wc++; n.wc++;
+                }
+            }
+        }
+    }
+    dragging = null; return true;
+}
+function mouseReleased() { return handleEnd(); }
+function touchEnded() { return handleEnd(); }
+
+function initChart() { 
+    const ctx = document.getElementById('uiChart').getContext('2d'); 
+    chart = new Chart(ctx, { type: 'scatter', data: { datasets: [{ label: 'U-I', data: [], showLine: true, borderColor: '#0284c7' }] }, options: { scales: { x: {min:0}, y: {min:0} }, responsive: true, maintainAspectRatio: false } }); 
+}
+function record() {
+    if (curI <= 0 || isDamaged) return;
+    dataPoints.push({ x: curI.toFixed(3), y: curU.toFixed(2) });
+    let row = document.getElementById('dataTable').querySelector('tbody').insertRow();
+    row.innerHTML = `<td>${dataPoints.length}</td><td>${curI.toFixed(3)}</td><td>${curU.toFixed(2)}</td>`;
+    chart.data.datasets[0].data.push({x:curI, y:curU}); chart.update();
+    let s = activeName + dataPoints.map(p => p.x+p.y).join("");
+    let h = 0; for (let i=0; i<s.length; i++) h = ((h<<5)-h) + s.charCodeAt(i);
+    document.getElementById('verifyCode').innerText = "ID: " + activeName + "-" + Math.abs(h).toString(16).toUpperCase();
+}
+function checkPass() { if(document.getElementById('passInput').value === TEACHER_PASS) document.getElementById('data-lock').classList.add('unlocked'); else alert("Sai!"); }
+async function submitReport() {
+    const canvas = await html2canvas(document.getElementById('report-area'));
+    canvas.toBlob(blob => {
+        const file = new File([blob], 'bao_cao.png', {type: 'image/png'});
+        if (navigator.share) navigator.share({files: [file], title: 'Nộp Bài'});
+        else { let l=document.createElement('a'); l.download='Bao_cao.png'; l.href=canvas.toDataURL(); l.click(); }
+    });
+}
+function resetLab() {
+    if(confirm("Làm lại sẽ đổi PIN. Bạn chắc chứ?")) {
+        wires = []; dataPoints = []; isDamaged = false;
+        devices.forEach(d => d.nodes.forEach(n => n.wc = 0));
+        document.getElementById('dataTable').querySelector('tbody').innerHTML = "";
+        chart.data.datasets[0].data = []; chart.update();
+        initBattery(); document.getElementById('data-lock').classList.remove('unlocked');
+    }
+}
+</script>
+</body>
+</html>

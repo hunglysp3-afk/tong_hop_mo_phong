@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Phòng Thí Nghiệm Vật Lý Cảm Ứng PRO</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background: #f8f9fa; color: #333; font-family: 'Segoe UI', sans-serif; touch-action: none; }
+        .ui-overlay { position: absolute; top: 15px; left: 15px; z-index: 10; pointer-events: none; }
+        .data-panel { background: white; padding: 15px; border-radius: 12px; border: 1px solid #dee2e6; box-shadow: 0 4px 6px rgba(0,0,0,0.05); pointer-events: auto; }
+        .data-item { margin: 5px 0; font-weight: bold; font-family: monospace; font-size: 14px; }
+        .phi-color { color: #2980b9; }
+        .emf-color { color: #c0392b; }
+        .controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 95%; max-width: 850px; justify-content: space-around; pointer-events: auto; border: 1px solid #eee; flex-wrap: wrap; }
+        .control-group { display: flex; flex-direction: column; align-items: flex-start; }
+        label { font-size: 10px; text-transform: uppercase; font-weight: bold; color: #7f8c8d; margin-bottom: 5px; }
+        select, input[type=range] { width: 90px; }
+        button { cursor:pointer; padding: 5px 10px; border-radius: 5px; border: 1px solid #bdc3c7; background: #ecf0f1; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+<div class="ui-overlay">
+    <div class="data-panel">
+        <div class="data-item phi-color" id="phiVal">Từ thông Φ: 0.00 Wb</div>
+        <div class="data-item emf-color" id="emfVal">Suất điện động E: 0.00 V</div>
+    </div>
+</div>
+
+<div class="controls">
+    <div class="control-group">
+        <label>Mức độ</label>
+        <select id="level">
+            <option value="1">1. Cơ bản</option>
+            <option value="2">2. Trung bình</option>
+            <option value="3" selected>3. Nâng cao</option>
+        </select>
+    </div>
+    <div class="control-group">
+        <label>Vòng dây (N)</label>
+        <input type="range" id="turns" min="2" max="15" value="5">
+    </div>
+    <div class="control-group">
+        <label>Tốc độ Auto</label>
+        <input type="range" id="autoSpeed" min="0" max="10" value="0">
+    </div>
+    <div class="control-group">
+        <label>Đảo cực</label>
+        <button onclick="togglePolarity()">Đổi N-S</button>
+    </div>
+</div>
+
+<script>
+let magX, magY;
+let isDragging = false;
+let lastMagX, velocity = 0;
+let emfHistory = [];
+let polarity = 1; 
+let autoTheta = 0;
+const magnetW = 140;
+const magnetH = 40;
+
+function setup() {
+    createCanvas(windowWidth, windowHeight);
+    magX = width / 5;
+    magY = height / 2 - 50;
+    lastMagX = magX;
+}
+
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+}
+
+function togglePolarity() {
+    polarity *= -1;
+}
+
+function draw() {
+    background(245, 247, 250); 
+    
+    let lv = parseInt(document.getElementById('level').value);
+    let numTurns = parseInt(document.getElementById('turns').value);
+    let autoS = parseInt(document.getElementById('autoSpeed').value);
+
+    // Xử lý logic chuyển động (Hỗ trợ Touch & Mouse)
+    handleInteraction(lv, autoS);
+
+    // Tính toán Vật lý
+    let distToCoil = magX - width/2;
+    let phi = exp(-pow(distToCoil/100, 2)) * polarity;
+    let dPhi = - (distToCoil / 50) * phi * (velocity / 5);
+    let currentEMF = numTurns * dPhi * 20;
+
+    document.getElementById('phiVal').innerText = `Từ thông Φ: ${phi.toFixed(2)} Wb`;
+    document.getElementById('emfVal').innerText = `Suất điện động E: ${currentEMF.toFixed(2)} V`;
+
+    // Vẽ các thành phần
+    drawWires(width/2, height/2 - 50, numTurns, 15, width - 150, 150);
+    drawCoil(width/2, height/2 - 50, numTurns, true);
+    
+    // Vẽ Nam châm và Từ trường Chuyên nghiệp
+    drawProfessionalMagnet(magX, height/2 - 50);
+    
+    drawCoil(width/2, height/2 - 50, numTurns, false);
+    drawGalvanometer(width - 150, 150, currentEMF);
+
+    if (lv === 3) drawGraph(currentEMF);
+}
+
+function handleInteraction(lv, autoS) {
+    if (lv >= 2 && autoS > 0 && !isDragging) {
+        autoTheta += autoS * 0.03;
+        magX = width/2 + sin(autoTheta) * (width/3.5);
+        velocity = (magX - lastMagX); 
+    } else if (isDragging) {
+        let targetX = (touches.length > 0) ? touches[0].x : mouseX;
+        magX = constrain(targetX, 100, width - 100);
+        velocity = (magX - lastMagX);
+    } else {
+        velocity *= 0.85; 
+    }
+    lastMagX = magX;
+}
+
+function touchStarted() {
+    let tX = (touches.length > 0) ? touches[0].x : mouseX;
+    let tY = (touches.length > 0) ? touches[0].y : mouseY;
+    if (dist(tX, tY, magX, height/2 - 50) < 100) {
+        isDragging = true;
+        return false; // Chặn scroll trình duyệt
+    }
+}
+
+function touchEnded() {
+    isDragging = false;
+}
+
+// Hàm vẽ Nam châm & Đường sức từ chuyên nghiệp
+function drawProfessionalMagnet(x, y) {
+    push();
+    translate(x, y);
+
+    // 1. Vẽ đường sức từ (Field Lines)
+    noFill();
+    stroke(100, 100, 100, 80);
+    strokeWeight(1.2);
+
+    let nX = (polarity === 1) ? magnetW/2 : -magnetW/2;
+    let sX = (polarity === 1) ? -magnetW/2 : magnetW/2;
+
+    for (let i = 0; i < 12; i++) {
+        let angle = map(i, 0, 11, -PI * 0.8, PI * 0.8);
+        let startX = nX + cos(angle) * 5;
+        let startY = sin(angle) * 5;
+        
+        drawFieldPath(startX, startY, nX, sX);
+    }
+
+    // 2. Vẽ thân Nam châm
+    noStroke();
+    let nCol = (polarity === 1) ? '#e74c3c' : '#3498db';
+    let sCol = (polarity === 1) ? '#3498db' : '#e74c3c';
+    
+    // Cực trái
+    fill(polarity === 1 ? sCol : nCol);
+    rect(-magnetW/2, -magnetH/2, magnetW/2, magnetH, 5, 0, 0, 5);
+    // Cực phải
+    fill(polarity === 1 ? nCol : sCol);
+    rect(0, -magnetH/2, magnetW/2, magnetH, 0, 5, 5, 0);
+
+    // Chữ nhãn
+    fill(255);
+    textSize(18);
+    textAlign(CENTER, CENTER);
+    text(polarity === 1 ? "S" : "N", -magnetW/4, 0);
+    text(polarity === 1 ? "N" : "S", magnetW/4, 0);
+    pop();
+}
+
+function drawFieldPath(sx, sy, nX, sX) {
+    let curr = createVector(sx, sy);
+    beginShape();
+    let points = [];
+    
+    for (let i = 0; i < 150; i++) {
+        points.push(curr.copy());
+        vertex(curr.x, curr.y);
+        
+        // Tính toán vector trường tại điểm hiện tại
+        let vN = createVector(curr.x - nX, curr.y);
+        let vS = createVector(curr.x - sX, curr.y);
+        
+        let forceN = vN.copy().normalize().div(vN.magSq() + 0.1);
+        let forceS = vS.copy().normalize().div(vS.magSq() + 0.1);
+        
+        let totalForce = forceN.sub(forceS).normalize().mult(6);
+        curr.add(totalForce);
+
+        // Dừng khi chạm cực Nam
+        if (dist(curr.x, curr.y, sX, 0) < 8) break;
+    }
+    endShape();
+
+    // Vẽ mũi tên ở giữa đường sức
+    if (points.length > 20) {
+        let mid = points[Math.floor(points.length / 2)];
+        let next = points[Math.floor(points.length / 2) + 1];
+        if (mid && next) {
+            let angle = atan2(next.y - mid.y, next.x - mid.x);
+            push();
+            translate(mid.x, mid.y);
+            rotate(angle);
+            fill(50); noStroke();
+            triangle(6, 0, -4, -4, -4, 4);
+            pop();
+        }
+    }
+}
+
+// --- CÁC HÀM PHỤ TRỢ GIỮ NGUYÊN VÀ TỐI ƯU ---
+
+function drawWires(cx, cy, turns, spacing, gx, gy) {
+    stroke(52, 73, 94, 150);
+    strokeWeight(2); noFill();
+    let startX = cx - (turns * spacing)/2;
+    let endX = cx + (turns * spacing)/2;
+    bezier(startX, cy - 55, startX - 80, cy - 120, gx - 100, gy + 80, gx - 30, gy + 70);
+    bezier(endX, cy - 55, endX + 80, cy - 120, gx + 100, gy + 80, gx + 30, gy + 70);
+}
+
+function drawCoil(x, y, turns, isBack) {
+    push();
+    let spacing = 15;
+    for (let i = 0; i < turns; i++) {
+        let xOff = x + i * spacing - (turns * spacing)/2;
+        if (isBack) {
+            stroke(200); strokeWeight(1);
+            drawingContext.setLineDash([5, 5]);
+            arc(xOff, y, 70, 110, HALF_PI, -HALF_PI);
+        } else {
+            stroke('#f39c12'); strokeWeight(4);
+            drawingContext.setLineDash([]);
+            arc(xOff, y, 70, 110, -HALF_PI, HALF_PI);
+        }
+    }
+    pop();
+}
+
+function drawGalvanometer(x, y, val) {
+    push(); translate(x, y);
+    fill(52, 73, 94); rect(-60, 0, 120, 90, 10);
+    fill(255); arc(0, 60, 100, 100, PI, TWO_PI, CHORD);
+    fill(231, 76, 60); noStroke(); textAlign(CENTER); text("+", -35, 85);
+    fill(100); text("-", 35, 85);
+    stroke(0, 50);
+    for(let a=0; a<=180; a+=20) {
+        let r = radians(a + 180);
+        line(cos(r)*40, 60+sin(r)*40, cos(r)*48, 60+sin(r)*48);
+    }
+    let angleVal = map(val, -100, 100, 180, 0);
+    stroke('#c0392b'); strokeWeight(3);
+    push(); translate(0, 60); rotate(radians(constrain(angleVal,0,180) + 180));
+    line(0, 0, 45, 0); pop();
+    fill(255); noStroke(); text("G", 0, 80);
+    pop();
+}
+
+function drawGraph(val) {
+    let gx = 50, gy = height - 180, gw = width - 100, gh = 100;
+    fill(255, 230); stroke(220); rect(gx, gy, gw, gh, 8);
+    line(gx, gy + gh/2, gx + gw, gy + gh/2);
+    emfHistory.push(val);
+    if (emfHistory.length > gw) emfHistory.shift();
+    noFill(); stroke('#e74c3c'); strokeWeight(2.5);
+    beginShape();
+    for(let i=0; i<emfHistory.length; i++) vertex(gx + i, gy + gh/2 - emfHistory[i]);
+    endShape();
+    fill('#7f8c8d'); noStroke(); textSize(10); text("ĐỒ THỊ SUẤT ĐIỆN ĐỘNG (E)", gx + 10, gy + 15);
+}
+</script>
+</body>
+</html>
