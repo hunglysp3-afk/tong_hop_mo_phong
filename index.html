@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kho Học Liệu Số - Vật Lý THPT</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #f0f2f5;
+            --primary: #2c3e50;
+            --accent: #e74c3c;
+            --text: #333;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: var(--primary);
+            margin-bottom: 5px;
+            font-size: 24px;
+        }
+        .header p {
+            color: #666;
+            margin: 0;
+            font-size: 14px;
+        }
+        .menu-container {
+            width: 100%;
+            max-width: 500px;
+            display: grid;
+            gap: 15px;
+        }
+        .menu-item {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-decoration: none;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--primary);
+        }
+        .menu-item:active {
+            transform: scale(0.98);
+            background-color: #f8f9fa;
+        }
+        .icon-box {
+            width: 50px;
+            height: 50px;
+            background: #fdf2f2;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 20px;
+            font-size: 24px;
+            color: var(--accent);
+        }
+        .text-box {
+            flex: 1;
+        }
+        .title {
+            font-weight: bold;
+            font-size: 16px;
+            display: block;
+        }
+        .subtitle {
+            font-size: 12px;
+            color: #888;
+        }
+        .arrow {
+            color: #ccc;
+        }
+        /* Hiệu ứng màu riêng cho từng bài để dễ phân biệt */
+        .item-generator { border-left-color: #f1c40f; }
+        .item-optics { border-left-color: #3498db; }
+        .item-circuit { border-left-color: #2ecc71; }
+        
+        .footer {
+            margin-top: 40px;
+            font-size: 12px;
+            color: #aaa;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>HỆ THỐNG MÔ PHỎNG VẬT LÝ</h1>
+        <p>Sáng kiến kinh nghiệm - Chân trời sáng tạo</p>
+    </div>
+
+    <div class="menu-container">
+        <a href="bai1-may-phat-dien.html" class="menu-item item-generator">
+            <div class="icon-box"><i class="fa-solid fa-bolt"></i></div>
+            <div class="text-box">
+                <span class="title">Máy phát điện xoay chiều</span>
+                <span class="subtitle">Mô phỏng cảm ứng điện từ & đồ thị hình sin</span>
+            </div>
+            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        </a>
+
+        <a href="do_e_r.html" class="menu-item item-optics">
+            <div class="icon-box"><i class="fa-solid fa-lightbulb"></i></div>
+            <div class="text-box">
+                <span class="title">Thí nghiệm mạch điện một chiều - Pin</span>
+                <span class="subtitle">Thí nghiệm xác định E - r của pin</span>
+            </div>
+            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        </a>
+
+        <a href="hien_tuong_cam_ung_dien_tu.html" class="menu-item item-circuit">
+            <div class="icon-box"><i class="fa-solid fa-microchip"></i></div>
+            <div class="text-box">
+                <span class="title">Hiện tượng cảm ứng điện từ</span>
+                <span class="subtitle">Bài 12: Cảm ứng điện từ - Faraday - Lenz</span>
+            </div>
+            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        </a>
+    </div>
+
+    <div class="footer">
+        &copy; 2026 - Tác giả: [Tên của bạn]<br>
+        Trường THPT Hùng Vương
+    </div>
+
+</body>
+</html>
