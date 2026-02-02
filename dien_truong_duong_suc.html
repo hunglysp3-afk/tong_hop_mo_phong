@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phòng Thí Nghiệm Điện Trường</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #ffffff; font-family: 'Segoe UI', Arial, sans-serif; }
+        canvas { display: block; }
+        #controls {
+            position: absolute; top: 20px; left: 20px;
+            background: rgba(250, 250, 250, 0.98);
+            padding: 15px; border-radius: 12px; 
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            border: 1px solid #ccc; width: 280px;
+        }
+        #graph-container {
+            margin-top: 15px; background: #000;
+            border-radius: 6px; position: relative;
+            height: 120px; width: 100%; overflow: hidden;
+            border: 2px solid #444;
+        }
+        canvas#graphCanvas { width: 100%; height: 100%; }
+        h3 { margin: 0 0 10px 0; color: #333; font-size: 16px; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
+        .control-group { margin-top: 10px; padding: 8px; background: #f0f0f0; border-radius: 8px; }
+        label { display: block; font-size: 12px; font-weight: bold; color: #444; margin-bottom: 3px; }
+        input[type="range"] { width: 100%; cursor: pointer; }
+        button { 
+            cursor: pointer; padding: 8px; margin-top: 10px; width: 100%; 
+            background: #444; color: white; border: none; border-radius: 6px;
+            font-weight: bold; font-size: 13px;
+        }
+        .label-graph { position: absolute; top: 5px; left: 5px; color: #00ff00; font-size: 10px; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+<div id="controls">
+    <h3>Cấu hình & Đồ thị</h3>
+    
+    <div id="selectionArea" class="control-group" style="display:none;">
+        <label id="qLabel">Độ lớn (q): 1</label>
+        <input type="range" id="qSlider" min="-5" max="5" step="0.5" value="1">
+    </div>
+
+    <div class="control-group">
+        <label id="densityLabel">Mật độ đường sức: 16</label>
+        <input type="range" id="densitySlider" min="4" max="32" value="16">
+    </div>
+
+    <div id="graph-container">
+        <span class="label-graph">Đồ thị E(x)</span>
+        <canvas id="graphCanvas"></canvas>
+    </div>
+
+    <button onclick="clearAll()">Xóa sạch màn hình</button>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const gCanvas = document.getElementById('graphCanvas');
+    const gCtx = gCanvas.getContext('2d');
+    
+    const densitySlider = document.getElementById('densitySlider');
+    const qSlider = document.getElementById('qSlider');
+    const selectionArea = document.getElementById('selectionArea');
+
+    let charges = [];
+    let selectedCharge = null;
+    let mousePos = { x: 0, y: 0 };
+    const k = 150; 
+    let baseDensity = 16;
+
+    function init() {
+        window.addEventListener('resize', resize);
+        resize();
+        animate();
+    }
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        gCanvas.width = gCanvas.offsetWidth;
+        gCanvas.height = gCanvas.offsetHeight;
+    }
+
+    function clearAll() { charges = []; selectedCharge = null; selectionArea.style.display = 'none'; }
+
+    densitySlider.oninput = function() {
+        baseDensity = parseInt(this.value);
+        document.getElementById('densityLabel').innerText = `Mật độ đường sức: ${baseDensity}`;
+    };
+
+    qSlider.oninput = function() {
+        if (selectedCharge) {
+            selectedCharge.q = parseFloat(this.value);
+            document.getElementById('qLabel').innerText = `Độ lớn (q): ${selectedCharge.q}`;
+        }
+    };
+
+    function getField(x, y) {
+        let ex = 0, ey = 0;
+        for (let c of charges) {
+            const dx = x - c.x, dy = y - c.y;
+            const r2 = dx * dx + dy * dy;
+            if (r2 < 100) continue; 
+            const r = Math.sqrt(r2);
+            const force = (k * c.q) / r2;
+            ex += force * (dx / r); ey += force * (dy / r);
+        }
+        return { ex, ey };
+    }
+
+    function drawGraph() {
+        gCtx.clearRect(0, 0, gCanvas.width, gCanvas.height);
+        if (charges.length === 0) return;
+
+        gCtx.strokeStyle = '#00ff00';
+        gCtx.lineWidth = 2.5; // Nét vẽ đồ thị đậm
+        gCtx.beginPath();
+
+        for (let gx = 0; gx < gCanvas.width; gx++) {
+            // Chuyển tọa độ x của đồ thị sang tọa độ x của màn hình chính
+            const screenX = (gx / gCanvas.width) * canvas.width;
+            const f = getField(screenX, mousePos.y);
+            const E = Math.sqrt(f.ex * f.ex + f.ey * f.ey);
+            
+            // Vẽ cường độ E, scale để vừa khung hình
+            const gy = gCanvas.height - Math.min(E * 5, gCanvas.height - 5);
+            if (gx === 0) gCtx.moveTo(gx, gy);
+            else gCtx.lineTo(gx, gy);
+        }
+        gCtx.stroke();
+
+        // Vẽ vạch đỏ tại vị trí chuột
+        const markerX = (mousePos.x / canvas.width) * gCanvas.width;
+        gCtx.strokeStyle = 'red';
+        gCtx.lineWidth = 1;
+        gCtx.beginPath();
+        gCtx.moveTo(markerX, 0); gCtx.lineTo(markerX, gCanvas.height);
+        gCtx.stroke();
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Vẽ đường sức
+        ctx.strokeStyle = 'rgba(80, 100, 140, 0.2)';
+        ctx.lineWidth = 1;
+        for (let c of charges) {
+            const currentDensity = Math.max(2, Math.round(baseDensity * Math.abs(c.q)));
+            for (let i = 0; i < currentDensity; i++) {
+                const angle = (i * Math.PI * 2) / currentDensity;
+                const r = 10 + Math.abs(c.q) * 3;
+                
+                let x = c.x + Math.cos(angle) * r, y = c.y + Math.sin(angle) * r;
+                ctx.beginPath(); ctx.moveTo(x, y);
+                for (let j = 0; j < 500; j++) {
+                    const f = getField(x, y);
+                    const mag = Math.sqrt(f.ex * f.ex + f.ey * f.ey);
+                    if (mag < 0.001) break;
+                    x += (f.ex / mag) * 5 * (c.q > 0 ? 1 : -1);
+                    y += (f.ey / mag) * 5 * (c.q > 0 ? 1 : -1);
+                    ctx.lineTo(x, y);
+                    let hit = false;
+                    for (let c2 of charges) if (Math.hypot(x - c2.x, y - c2.y) < 10 + Math.abs(c2.q)*3) { hit = true; break; }
+                    if (hit || x < -50 || x > canvas.width + 50 || y < -50 || y > canvas.height + 50) break;
+                }
+                ctx.stroke();
+            }
+        }
+
+        // Vẽ vector tại chuột và marker
+        if (charges.length > 0) {
+            const f = getField(mousePos.x, mousePos.y);
+            const E = Math.sqrt(f.ex * f.ex + f.ey * f.ey);
+            ctx.beginPath(); ctx.arc(mousePos.x, mousePos.y, 4, 0, Math.PI*2);
+            ctx.fillStyle = '#2ecc71'; ctx.fill();
+            
+            // Mũi tên vector
+            const angle = Math.atan2(f.ey, f.ex);
+            const len = Math.min(E * 15, 80);
+            ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(mousePos.x, mousePos.y);
+            ctx.lineTo(mousePos.x + len*Math.cos(angle), mousePos.y + len*Math.sin(angle));
+            ctx.stroke();
+        }
+
+        // Vẽ điện tích
+        for (let c of charges) {
+            const r = 12 + Math.abs(c.q) * 5;
+            if (c === selectedCharge) {
+                ctx.beginPath(); ctx.arc(c.x, c.y, r + 5, 0, Math.PI*2);
+                ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2; ctx.stroke();
+            }
+            ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, Math.PI * 2);
+            ctx.fillStyle = c.q > 0 ? '#ff4d4d' : '#3399ff'; ctx.fill();
+            ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.font = `bold ${14 + Math.abs(c.q)*2}px Arial`;
+            ctx.fillText(c.q > 0 ? '+' : '−', c.x, c.y);
+        }
+        drawGraph();
+    }
+
+    canvas.onmousedown = (e) => {
+        const x = e.clientX, y = e.clientY;
+        let found = charges.find(c => Math.hypot(c.x - x, c.y - y) < 30);
+        if (found) { selectedCharge = found; selectionArea.style.display = 'block'; qSlider.value = found.q; }
+        else {
+            const q = (e.button === 2 || e.ctrlKey) ? -1 : 1;
+            const newC = { x, y, q }; charges.push(newC); selectedCharge = newC;
+            selectionArea.style.display = 'block'; qSlider.value = q;
+        }
+    };
+    window.onmousemove = (e) => { mousePos.x = e.clientX; mousePos.y = e.clientY; };
+    window.oncontextmenu = (e) => e.preventDefault();
+    function animate() { draw(); requestAnimationFrame(animate); }
+    init();
+</script>
+</body>
+</html>
+/*Các nâng cấp trong phiên bản này:Đồ thị thời gian thực: Đồ thị quét cường độ điện trường $E$ theo trục ngang ($x$) của màn hình tại cao độ của con trỏ chuột.Phân tích điểm: Đường kẻ dọc màu đỏ trên đồ thị tương ứng với vị trí ngang của con trỏ chuột trên màn hình.Nét vẽ đậm: Đồ thị sử dụng màu xanh lá cây đậm với độ dày cao để bạn dễ dàng quan sát các "đỉnh" (nơi có điện tích) và "vực" (nơi điện trường yếu).Tối ưu hóa vị trí: Khung đồ thị được đặt gọn gàng trong bảng điều khiển bên trái.Mã nguồn hoàn thiện:
+Tại vị trí có điện tích: Đồ thị sẽ vọt lên cao vút (tiến tới vô cùng lý thuyết), thể hiện trường rất mạnh.Khoảng cách giữa 2 điện tích cùng dấu: Bạn sẽ thấy đồ thị lõm xuống và chạm đáy tại điểm trung hòa ($E=0$).Sự dịch chuyển của chuột: Khi bạn di chuyển chuột lên hoặc xuống, đồ thị sẽ thay đổi vì nó đang quét cường độ điện trường trên đường nằm ngang đi qua con trỏ chuột.

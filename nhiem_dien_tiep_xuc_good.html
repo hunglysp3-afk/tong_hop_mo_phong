@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Mô phỏng Vật lý 11: Tiếp xúc giữa 2 quả cầu</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --electron-color: #3498db;
+            --sphere-a: radial-gradient(circle at 30% 30%, #ecf0f1, #bdc3c7);
+            --sphere-b: radial-gradient(circle at 30% 30%, #bdc3c7, #7f8c8d);
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+        }
+
+        .header {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+            text-align: center;
+            padding: 15px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        #canvas {
+            position: relative;
+            width: 800px;
+            height: 450px;
+            background: white;
+            margin-top: 30px;
+            border-radius: 20px;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.05);
+            overflow: hidden;
+            border: 2px solid #ddd;
+        }
+
+        .sphere {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        #sphere-a {
+            left: 100px;
+            top: 150px;
+            background: var(--sphere-a);
+            cursor: grab;
+        }
+
+        #sphere-b {
+            left: 550px;
+            top: 150px;
+            background: var(--sphere-b);
+        }
+
+        .electron {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--electron-color);
+            border-radius: 50%;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            transition: transform 0.5s ease-out;
+            box-shadow: 0 0 4px var(--electron-color);
+        }
+
+        .label {
+            position: absolute;
+            bottom: -30px;
+            width: 100%;
+            text-align: center;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .controls { margin-top: 25px; }
+        
+        button {
+            padding: 12px 30px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        button:hover { background: #219150; transform: scale(1.05); }
+
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 10px;
+            width: 600px;
+            border-left: 6px solid #3498db;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Tương tác Điện tích: Tiếp xúc 2 quả cầu kim loại</h1>
+    <p>Kéo quả cầu A chạm vào quả cầu B để chia sẻ điện tích</p>
+</div>
+
+<div id="canvas">
+    <div id="sphere-a" class="sphere">
+        <div class="label">Quả cầu A (-)</div>
+    </div>
+    <div id="sphere-b" class="sphere">
+        <div class="label">Quả cầu B (0)</div>
+    </div>
+</div>
+
+<div class="info" id="status">
+    <b>Trạng thái:</b> Quả cầu A đang dư thừa electron. Quả cầu B trung hòa về điện.
+</div>
+
+<div class="controls">
+    <button onclick="window.location.reload()">Khởi động lại thí nghiệm</button>
+</div>
+
+<script>
+    const sphereA = document.getElementById('sphere-a');
+    const sphereB = document.getElementById('sphere-b');
+    const canvas = document.getElementById('canvas');
+    const status = document.getElementById('status');
+
+    const radius = 60; // Bán kính quả cầu
+    let isContacted = false;
+    let electrons = [];
+
+    // Hàm tạo vị trí electron ngẫu nhiên bên trong hình tròn
+    function getRandomPosInCircle(r) {
+        // Sử dụng tọa độ cực để đảm bảo phân bố đều và không tràn biên
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.sqrt(Math.random()) * (r - 10); // lùi vào 10px cho đẹp
+        return {
+            x: r + dist * Math.cos(angle) - 6, // trừ nửa kích thước hạt
+            y: r + dist * Math.sin(angle) - 6
+        };
+    }
+
+    function initElectrons() {
+        // Tạo 20 electron cho quả cầu A
+        for(let i=0; i<20; i++) {
+            const el = document.createElement('div');
+            el.className = 'electron';
+            el.innerText = '-';
+            const pos = getRandomPosInCircle(radius);
+            el.style.left = pos.x + 'px';
+            el.style.top = pos.y + 'px';
+            sphereA.appendChild(el);
+            electrons.push(el);
+        }
+    }
+
+    // Xử lý kéo thả
+    let active = false;
+    let currentX;
+    let currentY;
+    let initialX;
+    let initialY;
+    let xOffset = 0;
+    let yOffset = 0;
+
+    canvas.addEventListener("mousedown", dragStart);
+    canvas.addEventListener("mousemove", drag);
+    canvas.addEventListener("mouseup", dragEnd);
+
+    function dragStart(e) {
+        if (e.target === sphereA) {
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+            active = true;
+            sphereA.style.cursor = "grabbing";
+        }
+    }
+
+    function drag(e) {
+        if (active) {
+            e.preventDefault();
+            currentX = e.clientX - initialX;
+            currentY = e.clientY - initialY;
+            xOffset = currentX;
+            yOffset = currentY;
+
+            setTranslate(currentX, currentY, sphereA);
+            checkCollision();
+        }
+    }
+
+    function setTranslate(xPos, yPos, el) {
+        el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+    }
+
+    function dragEnd() {
+        active = false;
+        sphereA.style.cursor = "grab";
+    }
+
+    function checkCollision() {
+        if (isContacted) return;
+
+        const rectA = sphereA.getBoundingClientRect();
+        const rectB = sphereB.getBoundingClientRect();
+
+        // Tính khoảng cách tâm giữa 2 quả cầu
+        const centerA = { x: rectA.left + radius, y: rectA.top + radius };
+        const centerB = { x: rectB.left + radius, y: rectB.top + radius };
+        const distance = Math.sqrt(Math.pow(centerA.x - centerB.x, 2) + Math.pow(centerA.y - centerB.y, 2));
+
+        // Nếu khoảng cách <= tổng 2 bán kính (tiếp xúc)
+        if (distance <= radius * 2) {
+            isContacted = true;
+            status.innerHTML = "<b>Kết quả:</b> Hai quả cầu tiếp xúc. Electron phân bố lại đều trên cả hai bề mặt. <br><span style='color:#27ae60'>Vật B đã nhiễm điện âm do tiếp xúc!</span>";
+            performTransfer();
+        }
+    }
+
+    function performTransfer() {
+        // Chuyển 10 hạt sang vật B (chia đôi 20 hạt)
+        for(let i=0; i<10; i++) {
+            const el = electrons[i];
+            const pos = getRandomPosInCircle(radius);
+            
+            // Hiệu ứng mượt mà
+            setTimeout(() => {
+                sphereB.appendChild(el);
+                el.style.left = pos.x + 'px';
+                el.style.top = pos.y + 'px';
+            }, i * 50);
+        }
+    }
+
+    initElectrons();
+</script>
+</body>
+</html>

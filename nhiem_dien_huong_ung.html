@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vật Lý 11: Hưởng ứng liên tục sau khi tách</title>
+    <style>
+        :root {
+            --bg: #020617;
+            --panel: #1e293b;
+            --electron: #0ea5e9;
+            --proton: #ef4444;
+            --rod-charged: #dc2626;
+        }
+
+        body {
+            font-family: system-ui, sans-serif;
+            background-color: var(--bg); color: white; margin: 0;
+            display: flex; flex-direction: column; align-items: center;
+            height: 100vh; touch-action: none; overflow: hidden;
+        }
+
+        .header { padding: 10px; text-align: center; background: #1e293b; width: 100%; border-bottom: 1px solid #334155; }
+
+        #lab {
+            position: relative; width: 95vw; height: 50vh; max-width: 800px;
+            background: radial-gradient(circle, #1e293b 0%, #020617 100%);
+            margin: 20px auto; border-radius: 20px; border: 2px solid #334155;
+        }
+
+        .sphere {
+            position: absolute; width: 110px; height: 110px;
+            background: radial-gradient(circle at 30% 30%, #f1f5f9, #475569, #0f172a);
+            border-radius: 50%; z-index: 1; top: 50%; transform: translateY(-50%);
+            transition: left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: inset -5px -5px 15px rgba(0,0,0,0.6);
+        }
+
+        #rod {
+            position: absolute; left: 20px; top: 20px; width: 140px; height: 35px;
+            background: #64748b; border-radius: 8px; cursor: grab; z-index: 10;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .particle {
+            position: absolute; width: 10px; height: 10px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 8px; font-weight: bold; pointer-events: none; z-index: 5;
+            transition: left 0.2s ease-out, top 0.2s ease-out;
+        }
+
+        .electron { background: var(--electron); box-shadow: 0 0 5px var(--electron); }
+        .proton { background: var(--proton); opacity: 0.5; }
+
+        .info {
+            padding: 12px; background: #1e293b; width: 85vw; max-width: 600px;
+            border-radius: 10px; font-size: 13px; border-left: 5px solid var(--electron); margin-bottom: 10px;
+        }
+
+        .controls { display: flex; gap: 8px; justify-content: center; }
+        button { padding: 10px 15px; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; background: #334155; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="header"><strong>HƯỞNG ỨNG LIÊN TỤC (HỆ 2 QUẢ CẦU)</strong></div>
+
+<div id="lab">
+    <div id="rod">THANH A</div>
+    <div id="sphere-b" class="sphere"></div>
+    <div id="sphere-c" class="sphere"></div>
+</div>
+
+<div class="info" id="status">Tích điện thanh A rồi đưa lại gần để xem hưởng ứng.</div>
+
+<div class="controls">
+    <button onclick="chargeRod()" style="background:var(--proton)">1. Tích điện (-)</button>
+    <button id="sepBtn" onclick="separate()" disabled style="background:#10b981">2. Tách quả cầu</button>
+    <button onclick="window.location.reload()">Làm lại</button>
+</div>
+
+<script>
+    const lab = document.getElementById('lab'), rod = document.getElementById('rod');
+    const sB = document.getElementById('sphere-b'), sC = document.getElementById('sphere-c');
+    const status = document.getElementById('status'), sepBtn = document.getElementById('sepBtn');
+
+    let isCharged = false, isSeparated = false, dragging = false;
+    let electrons = [], sRadius, labW, labH;
+
+    function init() {
+        labW = lab.offsetWidth; labH = lab.offsetHeight;
+        sRadius = sB.offsetWidth / 2;
+        sB.style.left = (labW/2 - sRadius*2) + "px";
+        sC.style.left = (labW/2) + "px";
+
+        // Tạo Proton và Electron
+        for(let i=0; i<24; i++) {
+            const inB = i < 12;
+            const parent = inB ? sB : sC;
+            createP(parent, 'proton', '+');
+            
+            const e = document.createElement('div');
+            e.className = 'particle electron'; e.innerHTML = '-';
+            const pos = getInCircle(sRadius, sRadius, sRadius - 8);
+            e.style.left = pos.x + 'px'; e.style.top = pos.y + 'px';
+            // Lưu tọa độ trung hòa ban đầu (tương đối với quả cầu cha)
+            e.dataset.ox = pos.x; e.dataset.oy = pos.y;
+            parent.appendChild(e);
+            electrons.push(e);
+        }
+    }
+
+    function createP(parent, type, char) {
+        const p = document.createElement('div');
+        p.className = `particle ${type}`; p.innerHTML = char;
+        const pos = getInCircle(sRadius, sRadius, sRadius - 8);
+        p.style.left = pos.x + 'px'; p.style.top = pos.y + 'px';
+        parent.appendChild(p);
+    }
+
+    function getInCircle(cx, cy, r) {
+        const ang = Math.random() * Math.PI * 2, d = Math.sqrt(Math.random()) * r;
+        return { x: cx + d * Math.cos(ang) - 5, y: cy + d * Math.sin(ang) - 5 };
+    }
+
+    function chargeRod() {
+        isCharged = true; rod.style.background = "var(--rod-charged)";
+        rod.innerHTML = "THANH A (-)"; sepBtn.disabled = false;
+        status.innerHTML = "<b>Thanh A nhiễm điện âm.</b> Đưa lại gần B để đẩy electron.";
+    }
+
+    function separate() {
+        isSeparated = true; sepBtn.disabled = true;
+        sB.style.left = (labW/2 - sRadius*3.5) + "px";
+        sC.style.left = (labW/2 + sRadius*1.5) + "px";
+        status.innerHTML = "<b>Đã tách!</b> Thử đưa thanh A lại gần hoặc ra xa để xem electron di chuyển.";
+    }
+
+    let offX, offY;
+    const start = (e) => {
+        const t = e.touches ? e.touches[0] : e;
+        if(e.target === rod) { dragging = true; const r = rod.getBoundingClientRect(); offX = t.clientX - r.left; offY = t.clientY - r.top; }
+    };
+
+    const move = (e) => {
+        if(!dragging) return;
+        if(e.touches) e.preventDefault();
+        const t = e.touches ? e.touches[0] : e;
+        const lR = lab.getBoundingClientRect();
+        let x = t.clientX - lR.left - offX, y = t.clientY - lR.top - offY;
+        rod.style.left = x + 'px'; rod.style.top = y + 'px';
+
+        if(isCharged) updatePhysics(x + 140, y + 17);
+    };
+
+    function updatePhysics(tx, ty) {
+        const labRect = lab.getBoundingClientRect();
+
+        electrons.forEach(el => {
+            const parent = el.parentNode;
+            const pRect = parent.getBoundingClientRect();
+            // Tọa độ tâm quả cầu hiện tại so với Lab
+            const pCenterX = pRect.left - labRect.left + sRadius;
+            const pCenterY = pRect.top - labRect.top + sRadius;
+
+            // Vị trí gốc của hạt so với Lab
+            const oxGlobal = pCenterX - sRadius + parseFloat(el.dataset.ox);
+            const oyGlobal = pCenterY - sRadius + parseFloat(el.dataset.oy);
+
+            const dx = tx - oxGlobal, dy = ty - oyGlobal, d = Math.sqrt(dx*dx + dy*dy);
+            const force = Math.pow(Math.max(0, (400 - d) / 400), 1.5);
+
+            // Tọa độ mới mong muốn (Global)
+            let nxG = oxGlobal - (dx/d) * force * 150;
+            let nyG = oyGlobal - (dy/d) * force * 150;
+
+            // Chuyển đổi về tọa độ Local của quả cầu cha hiện tại
+            let nxL = nxG - (pRect.left - labRect.left);
+            let nyL = nyG - (pRect.top - labRect.top);
+
+            // Nếu chưa tách, cho phép chạy qua lại giữa B và C
+            if(!isSeparated) {
+                const other = (parent === sB) ? sC : sB;
+                const oRect = other.getBoundingClientRect();
+                
+                // Nếu vượt biên quả cầu hiện tại, kiểm tra xem có vào quả cầu kia không
+                if(!isInCircle(nxL, nyL, sRadius, sRadius, sRadius)) {
+                    let nxG_other = nxG - (oRect.left - labRect.left);
+                    let nyG_other = nyG - (oRect.top - labRect.top);
+                    
+                    if(isInCircle(nxG_other, nyG_other, sRadius, sRadius, sRadius)) {
+                        other.appendChild(el);
+                        nxL = nxG_other; nyL = nyG_other;
+                    } else {
+                        // Giữ hạt ở biên quả cầu hiện tại
+                        const clamped = clamp(nxL, nyL, sRadius, sRadius, sRadius);
+                        nxL = clamped.x; nyL = clamped.y;
+                    }
+                }
+            } else {
+                // Đã tách: Chỉ được di chuyển trong quả cầu hiện tại
+                if(!isInCircle(nxL, nyL, sRadius, sRadius, sRadius)) {
+                    const clamped = clamp(nxL, nyL, sRadius, sRadius, sRadius);
+                    nxL = clamped.x; nyL = clamped.y;
+                }
+            }
+
+            el.style.left = nxL + 'px'; el.style.top = nyL + 'px';
+        });
+    }
+
+    function isInCircle(x, y, cx, cy, r) { return Math.sqrt(Math.pow(x+5-cx, 2) + Math.pow(y+5-cy, 2)) < r - 5; }
+    function clamp(x, y, cx, cy, r) {
+        const ang = Math.atan2(y+5-cy, x+5-cx);
+        return { x: cx + (r-8)*Math.cos(ang) - 5, y: cy + (r-8)*Math.sin(ang) - 5 };
+    }
+
+    lab.addEventListener('mousedown', start); window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', () => dragging = false);
+    lab.addEventListener('touchstart', start, {passive: false});
+    window.addEventListener('touchmove', move, {passive: false});
+    window.addEventListener('touchend', () => dragging = false);
+    init();
+</script>
+</body>
+</html>
