@@ -29,80 +29,93 @@
         .header h1 {
             color: var(--primary);
             margin-bottom: 5px;
-            font-size: 24px;
+            font-size: 26px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         .header p {
             color: #666;
             margin: 0;
-            font-size: 14px;
+            font-size: 15px;
+            font-style: italic;
         }
         .menu-container {
             width: 100%;
-            max-width: 500px;
+            max-width: 550px;
             display: grid;
             gap: 15px;
         }
         .menu-item {
             background: white;
-            padding: 20px;
+            padding: 18px 20px;
             border-radius: 15px;
             text-decoration: none;
             color: var(--primary);
             display: flex;
             align-items: center;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border-left: 5px solid var(--primary);
+            border-left: 6px solid var(--primary);
+        }
+        .menu-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
         }
         .menu-item:active {
-            transform: scale(0.98);
-            background-color: #f8f9fa;
+            transform: scale(0.97);
         }
         .icon-box {
             width: 50px;
             height: 50px;
-            background: #fdf2f2;
+            background: #f8f9fa;
             border-radius: 12px;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-right: 20px;
-            font-size: 24px;
-            color: var(--accent);
+            margin-right: 18px;
+            font-size: 22px;
+            color: inherit; /* Lấy màu từ border-left */
         }
         .text-box {
             flex: 1;
         }
         .title {
             font-weight: bold;
-            font-size: 16px;
+            font-size: 17px;
             display: block;
+            margin-bottom: 2px;
         }
         .subtitle {
-            font-size: 12px;
-            color: #888;
+            font-size: 13px;
+            color: #777;
         }
         .arrow {
             color: #ccc;
+            font-size: 14px;
         }
-        /* Hiệu ứng màu riêng cho từng bài để dễ phân biệt */
-        .item-generator { border-left-color: #f1c40f; }
-        .item-optics { border-left-color: #3498db; }
-        .item-circuit { border-left-color: #2ecc71; }
+
+        /* Định nghĩa màu sắc riêng cho từng chủ đề */
+        .item-generator { border-left-color: #f1c40f; color: #d4ac0d; }
+        .item-circuit { border-left-color: #2ecc71; color: #27ae60; }
+        .item-magnet { border-left-color: #e67e22; color: #d35400; }
+        .item-electric-field { border-left-color: #9b59b6; color: #8e44ad; }
+        .item-static { border-left-color: #3498db; color: #2980b9; }
         
         .footer {
-            margin-top: 40px;
-            font-size: 12px;
-            color: #aaa;
+            margin-top: 50px;
+            padding: 20px;
+            font-size: 13px;
+            color: #888;
             text-align: center;
+            line-height: 1.6;
         }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>HỆ THỐNG MÔ PHỎNG VẬT LÝ</h1>
-        <p>Sáng kiến kinh nghiệm - Chân trời sáng tạo</p>
+        <h1>Hệ Thống Mô Phỏng Vật Lý</h1>
+        <p>Sáng kiến kinh nghiệm - Bộ sách Chân trời sáng tạo</p>
     </div>
 
     <div class="menu-container">
@@ -116,52 +129,55 @@
         </a>
 
         <a href="do_e_r_good.html" class="menu-item item-circuit">
-            <div class="icon-box"><i class="fa-solid fa-lightbulb"></i></div>
+            <div class="icon-box"><i class="fa-solid fa-battery-full"></i></div>
             <div class="text-box">
-                <span class="title">Thí nghiệm mạch điện một chiều - Pin</span>
-                <span class="subtitle">Thí nghiệm xác định E - r của pin</span>
+                <span class="title">Thí nghiệm mạch điện một chiều</span>
+                <span class="subtitle">Xác định suất điện động (E) và điện trở trong (r)</span>
             </div>
             <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
         </a>
 
-        <a href="hien_tuong_cam_ung_dien_tu_good.html" class="menu-item item-circuit">
+        <a href="hien_tuong_cam_ung_dien_tu_good.html" class="menu-item item-magnet">
             <div class="icon-box"><i class="fa-solid fa-magnet"></i></div>
             <div class="text-box">
                 <span class="title">Hiện tượng cảm ứng điện từ</span>
-                <span class="subtitle">Bài 12: Cảm ứng điện từ - Faraday - Lenz</span>
+                <span class="subtitle">Định luật Faraday & Định luật Lenz</span>
             </div>
             <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
         </a>
-<a href="dien_truong_duong_suc.html" class="menu-item item-electric-field">
+
+        <a href="dien_truong_duong_suc.html" class="menu-item item-electric-field">
             <div class="icon-box"><i class="fa-solid fa-bolt-lightning"></i></div>
             <div class="text-box">
                 <span class="title">Đường sức điện trường</span>
-                <span class="subtitle">Lý 11: Điện trường</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
-<a href="nhiem_dien_huong_ung.html" class="menu-item item-generator">
-            <div class="icon-box"><i class="fa-solid fa-plus-minus"></i></div>
-            <div class="text-box">
-                <span class="title">Nhiễm điện do hưởng ứng</span>
-                <span class="subtitle">Lý 11: Nhiễm điện</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
-<a href="nhiem_dien_tiep_xuc_good.html" class="menu-item item-generator">
-            <div class="icon-box"><i class="fa-solid fa-plus-minus"></i></div>
-            <div class="text-box">
-                <span class="title">Nhiễm điện do tiếp xúc</span>
-                <span class="subtitle">Lý 11: Nhiễm điện</span>
+                <span class="subtitle">Vật lý 11: Trực quan hóa điện trường</span>
             </div>
             <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
         </a>
 
+        <a href="nhiem_dien_huong_ung.html" class="menu-item item-static">
+            <div class="icon-box"><i class="fa-solid fa-atom"></i></div>
+            <div class="text-box">
+                <span class="title">Nhiễm điện do hưởng ứng</span>
+                <span class="subtitle">Vật lý 11: Sự phân bố lại điện tích</span>
+            </div>
+            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        </a>
+
+        <a href="nhiem_dien_tiep_xuc_good.html" class="menu-item item-static">
+            <div class="icon-box"><i class="fa-solid fa-hand-sparkles"></i></div>
+            <div class="text-box">
+                <span class="title">Nhiễm điện do tiếp xúc</span>
+                <span class="subtitle">Vật lý 11: Trao đổi điện tích giữa các vật</span>
+            </div>
+            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        </a>
     </div>
 
     <div class="footer">
-        &copy; 2026 - Tác giả: [NVH-DTTH]<br>
-        Trường THPT Hùng Vương
+        <hr style="width: 50px; border: 1px solid #ddd; margin-bottom: 15px;">
+        &copy; 2026 - Tác giả: <strong>[NVH-DTTH]</strong><br>
+        Trường THPT Hùng Vương - Tổ Vật Lý
     </div>
 
 </body>
