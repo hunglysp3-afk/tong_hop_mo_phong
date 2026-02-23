@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mạch Cảm Biến Ánh Sáng - Responsive</title>
+    <style>
+        :root { --bg: #e2e8f0; --primary: #3b82f6; --node-red: #f87171; --node-green: #4ade80; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; overflow: hidden; touch-action: none; }
+        
+        /* Điều khiển */
+        /* Tìm đến đoạn này trong thẻ <style> và cập nhật nhé */
+#ui-layer { 
+    position: absolute; 
+    top: 0; 
+    width: 100%; 
+    padding: 10px; 
+    background: rgba(255,255,255,0.9); 
+    display: flex; 
+    justify-content: space-around; 
+    font-size: 12px; 
+    z-index: 100; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    
+    /* Dòng quan trọng nhất để sửa lỗi kẹt thanh trượt */
+    touch-action: pan-x pan-y; 
+}
+
+/* Thêm đoạn này để thanh trượt to hơn, dễ kéo bằng ngón tay hơn */
+input[type=range] {
+    height: 30px; 
+    margin: 5px 0;
+    cursor: pointer;
+}
+
+        /* Vùng vẽ mạch */
+        #canvas-container { position: relative; width: 100vw; height: 100vh; background: #fff; transition: background 0.5s; }
+        
+        /* Linh kiện theo tỉ lệ % */
+        .component { 
+            position: absolute; 
+            border: 1.5px solid #1e293b; 
+            background: #f8fafc; 
+            border-radius: 6px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            width: 18%; /* Chiều rộng linh động */
+            min-width: 70px;
+            max-width: 110px;
+            padding: 5px;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+	    transition: all 0.3s ease;
+    		touch-action: none; /* Ngăn chặn các tương tác mặc định của trình duyệt trên linh kiện */
+        }
+
+        /* Định nghĩa vị trí các khối bằng % */
+        #battery { left: 5%; top: 40%; }
+        #pot { left: 30%; top: 15%; }
+        #ldr { left: 30%; top: 70%; }
+        #opamp { left: 55%; top: 40%; width: 22%; }
+        #led { left: 82%; top: 40%; }
+
+        /* Node bấm */
+        .node-box { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .node { 
+            width: 24px; height: 24px; /* Giữ kích thước đủ to để chạm */
+            background: var(--node-red); 
+            border-radius: 50%; 
+            border: 2px solid #fff; 
+            margin: 4px 0;
+            cursor: pointer;
+        }
+.node:active {
+    transform: scale(1.4); /* Phản hồi rõ rệt khi chạm vào */
+}
+        .node.selected { background: var(--primary); box-shadow: 0 0 10px var(--primary); }
+        .node.connected { background: var(--node-green); }
+        .node-label { font-size: 9px; font-weight: bold; text-transform: uppercase; }
+
+        /* SVG & Dây nối */
+        svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto; }
+        path { fill: none; stroke: #475569; stroke-width: 3; transition: stroke 0.3s; cursor: pointer; }
+        path:hover { stroke: #ef4444; stroke-width: 5; }
+
+        /* Hiệu ứng đèn */
+        #bulb { width: 30px; height: 30px; border: 2px solid #94a3b8; border-radius: 50%; transition: 0.3s; margin-bottom: 5px; }
+        .led-on { background: #fbbf24 !important; box-shadow: 0 0 25px #fbbf24; border-color: #f59e0b !important; }
+        
+        #msg { position: absolute; bottom: 10px; width: 100%; text-align: center; font-size: 11px; color: #64748b; pointer-events: none; }
+    
+[data-id="op-p"] { border-color: #3b82f6; } /* Chân cộng - Màu xanh dương */
+[data-id="op-n"] { border-color: #f59e0b; } /* Chân trừ - Màu cam */
+</style>
+</head>
+<body>
+
+<div id="ui-layer">
+    <div class="slider-group">
+        <label>🌞 Ánh sáng: <span id="l-val">80</span>%</label>
+        <input type="range" id="sun" min="0" max="100" value="80">
+    </div>
+    <div class="slider-group">
+        <label>⚙️ Độ nhạy: <span id="s-val">50</span>%</label>
+        <input type="range" id="sens" min="0" max="100" value="50">
+    </div>
+</div>
+
+<div id="canvas-container">
+    <svg id="wire-svg"></svg>
+
+    <div class="component" id="battery">
+        <span class="node-label">VCC</span>
+        <div class="node" data-id="vcc"></div>
+        <div style="height: 10px;"></div>
+        <div class="node" data-id="gnd"></div>
+        <span class="node-label">GND</span>
+    </div>
+
+    <div class="component" id="pot">
+        <span class="node-label">In</span>
+        <div class="node" data-id="p-in"></div>
+        <span class="node-label">V-Ref</span>
+        <div class="node" data-id="p-out"></div>
+    </div>
+
+    <div class="component" id="ldr">
+        <span class="node-label">In</span>
+        <div class="node" data-id="l-in"></div>
+        <span class="node-label">V-Sig</span>
+        <div class="node" data-id="l-out"></div>
+    </div>
+
+    <div class="component" id="opamp">
+        <div style="display:flex; justify-content: space-between; width:100%;">
+            <div class="node-box"><span class="node-label">In-</span><div class="node" data-id="op-n"></div></div>
+            <div class="node-box"><span class="node-label">In+</span><div class="node" data-id="op-p"></div></div>
+        </div>
+        <div style="margin-top:10px" class="node-box">
+            <span class="node-label">Out</span>
+            <div class="node" data-id="op-out"></div>
+        </div>
+    </div>
+
+    <div class="component" id="led">
+        <div id="bulb"></div>
+        <div style="display:flex; justify-content: space-between; width:100%;">
+            <div class="node-box"><span class="node-label">+</span><div class="node" data-id="led-pos"></div></div>
+            <div class="node-box"><span class="node-label">-</span><div class="node" data-id="led-neg"></div></div>
+        </div>
+    </div>
+</div>
+
+<div id="msg">Chạm cực để nối. Chạm dây để xóa.</div>
+
+<script>
+    let connections = [];
+    let activeNode = null;
+    const svg = document.getElementById('wire-svg');
+
+    // Xử lý sự kiện chạm/click
+   // Thay thế hàm handleNodeAction cũ bằng hàm này:
+function handleNodeAction(e) {
+    // Kiểm tra xem người dùng có đang chạm vào thanh trượt không
+    if (e.target.tagName === 'INPUT') {
+        return; // Nếu là thanh trượt, thoát hàm để trình duyệt xử lý mặc định
+    }
+
+    // Chỉ thực hiện chặn mặc định nếu chạm vào Node hoặc vùng trống để tránh cuộn trang khi nối dây
+    const node = e.target.closest('.node');
+    
+    if (!node) return;
+
+    e.preventDefault(); // Chặn cuộn trang khi đang thao tác với Node
+
+    if (!activeNode) {
+        activeNode = node;
+        node.classList.add('selected');
+    } else {
+        if (activeNode !== node) {
+            const id1 = activeNode.dataset.id;
+            const id2 = node.dataset.id;
+            if(!connections.some(c => (c[0]===id1 && c[1]===id2) || (c[0]===id2 && c[1]===id1))) {
+                connections.push([id1, id2]);
+            }
+        }
+        activeNode.classList.remove('selected');
+        activeNode = null;
+        render();
+    }
+}
+
+    // Gán sự kiện
+    document.addEventListener('mousedown', handleNodeAction);
+    document.addEventListener('touchstart', handleNodeAction, {passive: false});
+
+    function render() {
+        svg.innerHTML = '';
+        const rect = document.getElementById('canvas-container').getBoundingClientRect();
+
+        connections.forEach((conn, index) => {
+            const n1 = document.querySelector(`[data-id="${conn[0]}"]`).getBoundingClientRect();
+            const n2 = document.querySelector(`[data-id="${conn[1]}"]`).getBoundingClientRect();
+            
+            const x1 = n1.left - rect.left + n1.width/2;
+            const y1 = n1.top - rect.top + n1.height/2;
+            const x2 = n2.left - rect.left + n2.width/2;
+            const y2 = n2.top - rect.top + n2.height/2;
+
+            // Tính toán đường cong thông minh vòng qua giữa
+            const midY = Math.min(y1, y2) - (rect.height * 0.1); 
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', `M ${x1} ${y1} Q ${(x1+x2)/2} ${midY} ${x2} ${y2}`);
+            
+            // Xóa dây khi chạm vào
+            path.addEventListener('mousedown', (e) => { e.stopPropagation(); connections.splice(index, 1); render(); });
+            path.addEventListener('touchstart', (e) => { e.stopPropagation(); connections.splice(index, 1); render(); });
+            
+            svg.appendChild(path);
+        });
+
+        // Cập nhật trạng thái Node
+        document.querySelectorAll('.node').forEach(n => {
+            const isConnected = connections.flat().includes(n.dataset.id);
+            n.classList.toggle('connected', isConnected);
+        });
+
+        updateLogic();
+    }
+
+    function updateLogic() {
+    // 1. Lấy giá trị thực tế từ thanh trượt
+    const sunValue = 100 - parseInt(document.getElementById('sun').value); // Cường độ tối
+    const potValue = parseInt(document.getElementById('sens').value);     // Ngưỡng so sánh
+
+    // 2. Xác định chân nào đang nhận tín hiệu gì
+    let vInPlus = null;
+    let vInMinus = null;
+
+    connections.forEach(conn => {
+        // Kiểm tra chân In+ (Đầu vào không đảo)
+        if (conn.includes('op-p')) {
+            if (conn.includes('l-out')) vInPlus = sunValue;
+            if (conn.includes('p-out')) vInPlus = potValue;
+        }
+        // Kiểm tra chân In- (Đầu vào đảo)
+        if (conn.includes('op-n')) {
+            if (conn.includes('l-out')) vInMinus = sunValue;
+            if (conn.includes('p-out')) vInMinus = potValue;
+        }
+    });
+
+    // 3. Kiểm tra các điều kiện nguồn và đầu ra (để đảm bảo mạch kín)
+    const hasPower = connections.some(c => c.includes('vcc') && (c.includes('p-in') || c.includes('l-in')));
+    const hasOut = connections.some(c => c.includes('op-out') && c.includes('led-pos'));
+    const hasGnd = connections.some(c => c.includes('gnd') && c.includes('led-neg'));
+
+    // 4. Logic Op-amp: Nếu V(In+) > V(In-) thì đầu ra ở mức CAO (VCC)
+    const isOpAmpActive = (vInPlus !== null && vInMinus !== null && vInPlus > vInMinus);
+
+    const bulb = document.getElementById('bulb');
+    if (hasPower && hasOut && hasGnd && isOpAmpActive) {
+        bulb.classList.add('led-on');
+    } else {
+        bulb.classList.remove('led-on');
+    }
+
+    // Cập nhật giao diện phụ
+    document.getElementById('l-val').innerText = document.getElementById('sun').value;
+    document.getElementById('s-val').innerText = potValue;
+    document.getElementById('canvas-container').style.background = `rgb(${document.getElementById('sun').value * 2.5},${document.getElementById('sun').value * 2.5},${document.getElementById('sun').value * 2.5})`;
+}
+
+    document.getElementById('sun').oninput = render;
+    document.getElementById('sens').oninput = render;
+    window.addEventListener('resize', render);
+    
+    // Khởi tạo
+    render();
+</script>
+</body>
+</html>
