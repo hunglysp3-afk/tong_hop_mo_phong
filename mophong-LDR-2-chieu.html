@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mạch Cảm Biến Ánh Sáng - Responsive</title>
+    <style>
+        :root { --bg: #e2e8f0; --primary: #3b82f6; --node-red: #f87171; --node-green: #4ade80; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; overflow: hidden; touch-action: none; }
+        
+        /* Điều khiển */
+       
+/* Tổng thể giao diện */
+body {
+    margin: 0;
+    overflow: hidden; /* Ngăn cuộn trang để thao tác vẽ mượt hơn */
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Thanh điều khiển (Sidebar phía trên) */
+#sidebar-controls {
+    display: flex;
+    gap: 20px;
+    background: #f1f5f9;
+    padding: 15px;
+    border-bottom: 2px solid #e2e8f0;
+    z-index: 4000; /* Luôn nằm trên vùng vẽ */
+}
+
+.sidebar-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.center-content {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* Tối ưu vùng vẽ mạch */
+#canvas-container { 
+    position: relative; 
+    flex-grow: 1; /* Tự động lấy hết phần diện tích còn lại của màn hình */
+    width: 100vw; 
+    background: #ffffff; 
+    transition: background 0.5s;
+    overflow: hidden;
+}
+
+/* Điều chỉnh lại các vị trí fixed thành static để đi theo cột */
+#guide-btn {
+    position: static; 
+    width: 100%;
+    max-width: 250px;
+    margin: 0;
+}
+
+#challenge-text {
+    position: static;
+    margin-top: 8px;
+    max-width: none;
+    font-size: 13px;
+}
+
+/* Phóng to nhãn chân cho rõ như bạn yêu cầu */
+#opamp .node-label {
+    font-size: 16px !important;
+    font-weight: 900 !important;
+}
+
+/* Responsive cho điện thoại */
+@media (max-width: 600px) {
+    #sidebar-controls { flex-direction: column; gap: 10px; }
+    .component { scale: 0.8; } /* Thu nhỏ linh kiện 1 chút trên màn hình hẹp */
+}
+
+/* Thêm đoạn này để thanh trượt to hơn, dễ kéo bằng ngón tay hơn */
+input[type=range] {
+    height: 30px; 
+    margin: 5px 0;
+    cursor: pointer;
+}
+
+      
+        /* Linh kiện theo tỉ lệ % */
+        .component { 
+            position: absolute; 
+            border: 1.5px solid #1e293b; 
+            background: #f8fafc; 
+            border-radius: 6px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            width: 15%; /* Chiều rộng linh động */
+            min-width: 70px;
+            max-width: 80px;
+            padding: 5px;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+	    transition: all 0.3s ease;
+    		touch-action: none; /* Ngăn chặn các tương tác mặc định của trình duyệt trên linh kiện */
+        }
+
+        /* Định nghĩa vị trí các khối bằng % */
+        #battery { left: 5%; top: 40%; }
+        #pot { left: 20%; top: 15%; }
+        #ldr { left: 30%; top: 60%; }
+        #opamp { left: 45%; top: 40%; width: 22%; }
+        #led { left: 82%; top: 40%; }
+
+        /* Node bấm */
+        .node-box { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .node { 
+            width: 24px; height: 24px; /* Giữ kích thước đủ to để chạm */
+            background: var(--node-red); 
+            border-radius: 50%; 
+            border: 2px solid #fff; 
+            margin: 4px 0;
+            cursor: pointer;
+        }
+.node:active {
+    transform: scale(1.4); /* Phản hồi rõ rệt khi chạm vào */
+}
+        .node.selected { background: var(--primary); box-shadow: 0 0 10px var(--primary); }
+        .node.connected { background: var(--node-green); }
+        .node-label { font-size: 14px; font-weight: bold; text-transform: uppercase; }
+
+        /* SVG & Dây nối */
+        svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: auto; }
+        path { fill: none; stroke: #475569; stroke-width: 3; transition: stroke 0.3s; cursor: pointer; }
+        path:hover { stroke: #ef4444; stroke-width: 5; }
+
+        /* Hiệu ứng đèn */
+        #bulb { width: 30px; height: 30px; border: 2px solid #94a3b8; border-radius: 50%; transition: 0.3s; margin-bottom: 5px; }
+        .led-on { background: #fbbf24 !important; box-shadow: 0 0 25px #fbbf24; border-color: #f59e0b !important; }
+        
+        #msg { position: absolute; bottom: 10px; width: 100%; text-align: center; font-size: 11px; color: #64748b; pointer-events: none; }
+   
+/* Hiệu ứng đèn đổi màu */
+@keyframes colorCycle {
+    0% { background-color: #facc15; box-shadow: 0 0 30px #facc15; border-color: #f59e0b; } /* Vàng */
+    33% { background-color: #22c55e; box-shadow: 0 0 30px #22c55e; border-color: #16a34a; } /* Xanh lá */
+    66% { background-color: #ef4444; box-shadow: 0 0 30px #ef4444; border-color: #dc2626; } /* Đỏ */
+    100% { background-color: #facc15; box-shadow: 0 0 30px #facc15; border-color: #f59e0b; } /* Về lại Vàng */
+}
+
+/* Class mới cho đèn khi hoạt động */
+.led-on-rainbow {
+    animation: colorCycle 0.5s infinite linear; /* Đổi màu liên tục mỗi 1.5 giây */
+    border-width: 3px !important;
+}
+ 
+path { 
+    fill: none; 
+    stroke: #475569; 
+    stroke-width: 8; /* Tăng độ dày cơ bản lên một chút */
+    transition: stroke 0.3s; 
+    cursor: pointer;
+    /* Dòng quan trọng: Giúp vùng nhận diện sự kiện rộng hơn sợi dây nhìn thấy */
+    stroke-linecap: round;
+}
+
+/* Hiệu ứng khi ngón tay đè vào dây */
+path:active { 
+    stroke: #ef4444; 
+    stroke-width: 15; /* Tăng vọt độ dày khi chạm để đảm bảo nhận diện click */
+}
+
+/* Bảng thông tin trượt từ dưới lên */
+#info-panel {
+    position: fixed;
+    bottom: -150px; /* Ẩn dưới màn hình */
+    left: 0;
+    width: 100%;
+    min-height: 80px;
+    background: rgba(30, 41, 59, 0.95); /* Màu xanh đen sang trọng */
+    color: white;
+    padding: 15px 20px;
+    box-sizing: border-box;
+    transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 2000;
+    border-top: 3px solid #3b82f6;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.3);
+    pointer-events: auto;
+}
+
+#info-panel.show {
+    bottom: 0; /* Hiện lên */
+}
+
+#info-panel h4 {
+    margin: 0 0 5px 0;
+    color: #60a5fa;
+    text-transform: uppercase;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+#info-panel p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #e2e8f0;
+}
+
+/* Nút đóng nhanh */
+#info-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    color: #94a3b8;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+
+
+/* Nhãn hướng dẫn gắn trên linh kiện (Mặc định ẩn) */
+.guide-label {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #ef4444;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    display: none; /* Chỉ hiện khi bật mode hướng dẫn */
+    pointer-events: none;
+}
+
+.show-guide .guide-label {
+    display: block;
+    animation: bounce 0.5s infinite alternate;
+}
+
+@keyframes bounce {
+    from { transform: translateX(-50%) translateY(0); }
+    to { transform: translateX(-50%) translateY(-5px); }
+}
+[data-id="op-p"] { border-color: #3b82f6; } /* Chân cộng - Màu xanh dương */
+[data-id="op-n"] { border-color: #f59e0b; } /* Chân trừ - Màu cam */
+</style>
+</head>
+<body>
+
+<div id="sidebar-controls">
+    <div class="sidebar-column">
+        <div class="slider-group">
+            <label>🌞 Ánh sáng: <span id="l-val">80</span>%</label>
+            <input type="range" id="sun" min="0" max="100" value="80">
+        </div>
+        <div class="slider-group">
+            <label>⚙️ Độ nhạy: <span id="s-val">50</span>%</label>
+            <input type="range" id="sens" min="0" max="100" value="50">
+        </div>
+    </div>
+
+    <div class="sidebar-column center-content">
+        <button id="guide-btn">Cần trợ giúp?</button>
+        <div id="challenge-text">💡 Thách thức: Hãy nối dây sao cho đèn sáng khi trời tối!</div>
+    </div>
+</div>
+
+<div id="canvas-container">
+    <svg id="wire-svg"></svg>
+<div id="info-panel">
+    <div id="info-close">&times;</div>
+    <h4 id="info-title">Tên linh kiện</h4>
+    <p id="info-body">Chức năng chi tiết sẽ hiện ở đây...</p>
+</div>
+    <div class="component" id="battery" data-name="Nguồn Pin (9V)" data-desc="Cung cấp năng lượng cho toàn mạch. Cực VCC (+) cấp điện dương, cực GND (-) là điểm nối đất.">
+        <span class="guide-label">Bắt đầu từ đây!</span>
+	<span class="node-label">VCC (+)</span>
+        <div class="node" data-id="vcc"></div>
+        <div style="height: 10px;"></div>
+        <div class="node" data-id="gnd"></div>
+        <span class="node-label">GND (-)</span>
+    </div>
+
+   <div class="component" id="pot" data-name="Biến trở (Potentiometer)" data-desc="Dùng để điều chỉnh ngưỡng so sánh. Khi xoay (kéo thanh trượt), điện áp tham chiếu V-Ref sẽ thay đổi. Cực VCC (+) nối với chân In.">
+    <span class="node-label">In</span>
+    <div class="node" data-id="p-in"></div>
+    <span class="node-label">V-Ref: <b id="v-pot">0</b>V</span> <div class="node" data-id="p-out"></div>
+</div>
+
+<div class="component" id="ldr" data-name="Cảm biến quang trở (LDR)" data-desc="Điện trở thay đổi theo ánh sáng. Trời càng tối, làm điện áp V-Sig tăng lên. Cực VCC (+) nối với chân In.">
+    <span class="guide-label">Cảm biến ánh sáng</span>
+	<span class="node-label">In</span>
+    <div class="node" data-id="l-in"></div>
+    <span class="node-label">V-Sig: <b id="v-ldr">0</b>V</span> <div class="node" data-id="l-out"></div>
+</div>
+
+<div class="component" id="opamp" data-name="Bộ so sánh (Op-amp)" data-desc="So sánh áp tại In+ và In-. Nếu In+ > In-, đầu ra Out sẽ xuất 9V để bật đèn. Chân In+ nối vào V-Sig, chân In- nối vào V-Ref (tức là tín hiệu Vào > tín hiệu Ngưỡng)" style="width: 100px; flex-direction: row; justify-content: space-between; padding: 10px;">
+<span class="guide-label">"Bộ não" so sánh</span>    
+<div style="display: flex; flex-direction: column; justify-content: space-around; height: 100%;">
+        <div class="node-box">
+            <span class="node-label" style="color: #f59e0b;">In-: <b id="v-op-n">?</b>V</span>
+            <div class="node" data-id="op-n"></div>
+        </div>
+        <div style="height: 10px;"></div> <div class="node-box">
+            <span class="node-label" style="color: #3b82f6;">In+: <b id="v-op-p">?</b>V</span>
+            <div class="node" data-id="op-p"></div>
+        </div>
+    </div>
+
+    <div style="align-self: center; font-size: 10px; color: #64748b;">▶</div>
+
+    <div style="display: flex; flex-direction: column; justify-content: center;">
+        <div class="node-box">
+            <span class="node-label">Out: <b id="v-op-out">0</b>V</span>
+            <div class="node" data-id="op-out"></div>
+        </div>
+    </div>
+</div>
+
+    <div class="component" id="led" data-name="Đèn LED báo hiệu" data-desc="Phát sáng khi nhận được điện áp từ Op-amp. Cần nối cực dương vào Out và cực âm vào GND.">
+        <div id="bulb">LED</div>
+        <div style="display:flex; justify-content: space-between; width:100%;">
+            <div class="node-box"><span class="node-label">+</span><div class="node" data-id="led-pos"></div></div>
+            <div class="node-box"><span class="node-label">-</span><div class="node" data-id="led-neg"></div></div>
+        </div>
+    </div>
+</div>
+
+<div id="msg">Chạm cực để nối. Chạm dây để xóa.</div>
+
+<script>
+    let connections = [];
+    let activeNode = null;
+    const svg = document.getElementById('wire-svg');
+
+    // Xử lý sự kiện chạm/click
+   // Thay thế hàm handleNodeAction cũ bằng hàm này:
+function handleNodeAction(e) {
+    // Kiểm tra xem người dùng có đang chạm vào thanh trượt không
+    if (e.target.tagName === 'INPUT') {
+        return; // Nếu là thanh trượt, thoát hàm để trình duyệt xử lý mặc định
+    }
+
+    // Chỉ thực hiện chặn mặc định nếu chạm vào Node hoặc vùng trống để tránh cuộn trang khi nối dây
+    const node = e.target.closest('.node');
+    
+    if (!node) return;
+
+    e.preventDefault(); // Chặn cuộn trang khi đang thao tác với Node
+
+    if (!activeNode) {
+        activeNode = node;
+        node.classList.add('selected');
+    } else {
+        if (activeNode !== node) {
+            const id1 = activeNode.dataset.id;
+            const id2 = node.dataset.id;
+            if(!connections.some(c => (c[0]===id1 && c[1]===id2) || (c[0]===id2 && c[1]===id1))) {
+if (!activeNode) {
+    activeNode = node;
+    node.classList.add('selected');
+} else {
+    if (activeNode !== node) {
+        const id1 = activeNode.dataset.id;
+        const id2 = node.dataset.id;
+
+        // --- BẮT ĐẦU ĐOẠN CODE KIỂM TRA MỚI ---
+        
+        // Lấy tên linh kiện từ thuộc tính id của phần tử cha
+        const parent1 = activeNode.closest('.component').id;
+        const parent2 = node.closest('.component').id;
+
+        // Nếu 2 cực thuộc cùng một linh kiện (ví dụ: cùng thuộc 'battery' hoặc 'ldr')
+        if (parent1 === parent2) {
+            alert("⚠️ Không thể nối 2 cực trong cùng một linh kiện!");
+            activeNode.classList.remove('selected');
+            activeNode = null;
+            return; // Thoát hàm, không cho tạo dây nối
+        }
+        
+        // --- KẾT THÚC ĐOẠN CODE KIỂM TRA ---
+
+        // Logic tạo kết nối cũ của bạn
+        if(!connections.some(c => (c[0]===id1 && c[1]===id2) || (c[0]===id2 && c[1]===id1))) {
+            connections.push([id1, id2]);
+        }
+    }
+    activeNode.classList.remove('selected');
+    activeNode = null;
+    render();
+}                
+
+
+connections.push([id1, id2]);
+            }
+        }
+        activeNode.classList.remove('selected');
+        activeNode = null;
+        render();
+    }
+}
+
+    // Gán sự kiện
+    document.addEventListener('mousedown', handleNodeAction);
+    document.addEventListener('touchstart', handleNodeAction, {passive: false});
+
+    function render() {
+        svg.innerHTML = '';
+        const rect = document.getElementById('canvas-container').getBoundingClientRect();
+
+        connections.forEach((conn, index) => {
+            const n1 = document.querySelector(`[data-id="${conn[0]}"]`).getBoundingClientRect();
+            const n2 = document.querySelector(`[data-id="${conn[1]}"]`).getBoundingClientRect();
+            
+            const x1 = n1.left - rect.left + n1.width/2;
+            const y1 = n1.top - rect.top + n1.height/2;
+            const x2 = n2.left - rect.left + n2.width/2;
+            const y2 = n2.top - rect.top + n2.height/2;
+
+            // Tính toán đường cong thông minh vòng qua giữa
+            const midY = Math.min(y1, y2) - (rect.height * 0.1); 
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', `M ${x1} ${y1} Q ${(x1+x2)/2} ${midY} ${x2} ${y2}`);
+            
+            // Xóa dây khi chạm vào
+            path.addEventListener('mousedown', (e) => { e.stopPropagation(); connections.splice(index, 1); render(); });
+            path.addEventListener('touchstart', (e) => { e.stopPropagation(); connections.splice(index, 1); render(); });
+            
+            svg.appendChild(path);
+        });
+
+        // Cập nhật trạng thái Node
+        document.querySelectorAll('.node').forEach(n => {
+            const isConnected = connections.flat().includes(n.dataset.id);
+            n.classList.toggle('connected', isConnected);
+        });
+
+        updateLogic();
+    }
+
+   function updateLogic() {
+
+// Thêm dòng này vào đầu hàm updateLogic
+document.getElementById('v-op-p').innerText = "?";
+document.getElementById('v-op-n').innerText = "?";
+document.getElementById('v-op-out').innerText = "0";
+	
+    const VCC = 9.0; // Giả định pin 9V
+    const sunPercent = parseInt(document.getElementById('sun').value);
+    const potPercent = parseInt(document.getElementById('sens').value);
+
+    // Tính điện áp thực tế
+    // Biến trở: Càng kéo cao Volt càng cao (tỉ lệ thuận)
+ // LDR: Trời càng tối (Percent thấp) -> Điện trở cao -> Áp tại điểm chia áp cao
+    // Công thức mô phỏng: V = VCC * (1 - Percent/100)
+    // 1. Mặc định các giá trị áp đầu ra là 0V
+let vPotActual = 0;
+let vLdrActual = 0;
+
+// 2. Chỉ tính toán điện áp NẾU linh kiện đó đã được nối với VCC
+const potHasVCC = connections.some(c => (c.includes('vcc') && c.includes('p-in')) || (c.includes('p-in') && c.includes('vcc')));
+const ldrHasVCC = connections.some(c => (c.includes('vcc') && c.includes('l-in')) || (c.includes('l-in') && c.includes('vcc')));
+
+if (potHasVCC) {
+    vPotActual = ((potPercent / 100) * VCC).toFixed(1);
+}
+if (ldrHasVCC) {
+    vLdrActual = ((1 - (sunPercent / 100)) * VCC).toFixed(1);
+}
+    
+   
+  
+    // Hiển thị lên linh kiện nguồn
+    document.getElementById('v-pot').innerText = vPotActual;
+    document.getElementById('v-ldr').innerText = vLdrActual;
+
+    let vInPlus = null;
+    let vInMinus = null;
+
+    // Kiểm tra kết nối để truyền dẫn điện áp vào Op-amp
+    connections.forEach(conn => {
+        if (conn.includes('op-p')) {
+            if (conn.includes('l-out')) vInPlus = parseFloat(vLdrActual);
+            if (conn.includes('p-out')) vInPlus = parseFloat(vPotActual);
+        }
+        if (conn.includes('op-n')) {
+            if (conn.includes('l-out')) vInMinus = parseFloat(vLdrActual);
+            if (conn.includes('p-out')) vInMinus = parseFloat(vPotActual);
+        }
+    });
+
+    // Cập nhật hiển thị tại chân Op-amp
+    document.getElementById('v-op-p').innerText = vInPlus !== null ? vInPlus : "?";
+    document.getElementById('v-op-n').innerText = vInMinus !== null ? vInMinus : "?";
+
+    // Logic mạch kín
+    const hasPower = connections.some(c => c.includes('vcc') && (c.includes('p-in') || c.includes('l-in')));
+    const hasOut = connections.some(c => c.includes('op-out') && c.includes('led-pos'));
+    const hasGnd = connections.some(c => c.includes('gnd') && c.includes('led-neg'));
+
+    // Quyết định đầu ra Op-amp
+    let vOut = 0;
+    const isActive = (vInPlus !== null && vInMinus !== null && vInPlus > vInMinus);
+    
+    if (hasPower && isActive) {
+        vOut = VCC; // Xuất xấp xỉ VCC khi thỏa điều kiện so sánh
+    }
+
+    document.getElementById('v-op-out').innerText = vOut.toFixed(0);
+
+    const bulb = document.getElementById('bulb');
+    if (hasPower && hasOut && hasGnd && isActive) {
+        bulb.classList.add('led-on-rainbow');
+    } else {
+        bulb.classList.remove('led-on-rainbow');
+    }
+
+    // Các cập nhật giao diện khác giữ nguyên...
+    document.getElementById('l-val').innerText = sunPercent;
+    document.getElementById('s-val').innerText = potPercent;
+    document.getElementById('canvas-container').style.background = `rgb(${sunPercent*2.5},${sunPercent*2.5},${sunPercent*2.5})`;
+}
+
+    document.getElementById('sun').oninput = render;
+    document.getElementById('sens').oninput = render;
+    window.addEventListener('resize', render);
+    
+    // Khởi tạo
+    render();
+
+// Logic hiển thị bảng thông tin
+const infoPanel = document.getElementById('info-panel');
+const infoTitle = document.getElementById('info-title');
+const infoBody = document.getElementById('info-body');
+const infoClose = document.getElementById('info-close');
+
+// Logic hiển thị bảng thông tin (Bản sửa lỗi tối ưu)
+// Logic hiển thị bảng thông tin (Bản sửa lỗi cuối cùng - Chạy cực nhạy)
+document.querySelectorAll('.component').forEach(comp => {
+    comp.addEventListener('click', (e) => {
+        // 1. Nếu chưa bật chế độ Hướng dẫn thì không hiện bảng (Kích thích mày mò)
+        if (!guideMode) return;
+
+        // 2. Nếu bấm trúng cái điểm tròn (node) hoặc thanh trượt thì thoát ngay
+        // closest('.node') giúp nhận diện chính xác kể cả khi bấm vào rìa điểm tròn
+        if (e.target.closest('.node') || e.target.tagName === 'INPUT') {
+            return;
+        }
+
+        // 3. Nếu đang trong quá trình kéo dây (đã chọn 1 node rồi) thì không hiện bảng
+        if (activeNode) return;
+
+        // 4. Hiện bảng thông tin
+        infoTitle.innerText = comp.getAttribute('data-name');
+        infoBody.innerText = comp.getAttribute('data-desc');
+        infoPanel.classList.add('show');
+        
+        // Ngăn sự kiện Click này lan ra canvas làm đóng bảng ngay lập tức
+        e.stopPropagation();
+    });
+});
+
+// Đóng bảng khi bấm nút X
+infoClose.onclick = () => infoPanel.classList.remove('show');
+
+// Đóng bảng khi chạm vào vùng trống của màn hình
+document.getElementById('canvas-container').addEventListener('click', () => {
+    infoPanel.classList.remove('show');
+});
+
+const guideBtn = document.getElementById('guide-btn');
+const challengeText = document.getElementById('challenge-text');
+let guideMode = false;
+
+// Danh sách các câu thách thức để thay đổi ngẫu nhiên cho thú vị
+const challenges = [
+    "💡 Thách thức: Bạn có thể làm đèn sáng khi TRỜI TỐI không?",
+    "🚀 Thử thách: Làm sao để đèn sáng khi TRỜI SÁNG?",
+    "🧐 Đố bạn: Tại sao nối Pin vào LDR mà nó chưa hoạt động?",
+    "🛠️ Nhiệm vụ: Hãy dùng Biến trở để chỉnh độ nhạy của đèn!"
+];
+
+guideBtn.onclick = () => {
+    guideMode = !guideMode;
+    
+    if (guideMode) {
+        document.body.classList.add('show-guide');
+        guideBtn.innerText = "Đóng hướng dẫn";
+        guideBtn.style.background = "#64748b";
+        challengeText.innerText = "👉 Gợi ý: Nối VCC vào các chân 'In',.... sau đó nối 'Out' vào +LED.";
+    } else {
+        document.body.classList.remove('show-guide');
+        guideBtn.innerText = "Cần trợ giúp?";
+        guideBtn.style.background = "#3b82f6";
+        // Đổi ngẫu nhiên một câu đố khác khi đóng hướng dẫn
+        challengeText.innerText = challenges[Math.floor(Math.random() * challenges.length)];
+    }
+};
+</script>
+</body>
+</html>
