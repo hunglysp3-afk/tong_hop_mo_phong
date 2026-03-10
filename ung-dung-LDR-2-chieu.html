@@ -255,12 +255,12 @@ path:active {
 <div id="sidebar-controls">
     <div class="sidebar-column">
         <div class="slider-group">
-            <label>🌞 Ánh sáng: <span id="l-val">70</span>%</label>
-            <input type="range" id="sun" min="0" max="100" value="70">
+            <label>🌞 Ánh sáng: <span id="l-val">40</span>%</label>
+            <input type="range" id="sun" min="0" max="100" value="40">
         </div>
         <div class="slider-group">
-            <label>⚙️ Độ nhạy: <span id="s-val">80</span>%</label>
-            <input type="range" id="sens" min="0" max="100" value="80">
+            <label>⚙️ Độ nhạy: <span id="s-val">50</span>%</label>
+            <input type="range" id="sens" min="0" max="100" value="50">
         </div>
     </div>
 
@@ -278,7 +278,10 @@ path:active {
     <p id="info-body">Chức năng chi tiết sẽ hiện ở đây...</p>
 </div>
     <div class="component" id="battery" data-name="Nguồn Pin (9V)" data-desc="Cung cấp năng lượng cho toàn mạch. Cực VCC (+) cấp điện dương, cực GND (-) là điểm nối đất.">
-        <span class="guide-label">Bắt đầu từ đây!</span>
+<div style="position:absolute; bottom:2px; font-size:9px; color:#94a3b8;">
+        (Battery)
+    </div>       
+ <span class="guide-label">Bắt đầu từ đây!</span>
 	<span class="node-label">VCC (+)</span>
         <div class="node" data-id="vcc"></div>
         <div style="height: 10px;"></div>
@@ -287,20 +290,30 @@ path:active {
     </div>
 
    <div class="component" id="pot" data-name="Biến trở (Potentiometer)" data-desc="Dùng để điều chỉnh ngưỡng so sánh. Khi xoay (kéo thanh trượt), điện áp tham chiếu V-Ref sẽ thay đổi. Cực VCC (+) nối với chân In.">
-    <span class="node-label">In</span>
+<span class="guide-label">Biến trở</span>
+<div style="position:absolute; bottom:2px; font-size:9px; color:#94a3b8;">
+        (Powered by Battery)
+    </div>   
+ <span class="node-label">In(+)</span>
     <div class="node" data-id="p-in"></div>
     <span class="node-label">V-Ref: <b id="v-pot">0</b>V</span> <div class="node" data-id="p-out"></div>
 </div>
 
 <div class="component" id="ldr" data-name="mạch chia áp chưa Cảm biến ánh sáng (LDR)" data-desc="Điện trở thay đổi theo ánh sáng. Trời càng tối, làm điện áp V-Sig tăng lên. Cực VCC (+) nối với chân In.">
     <span class="guide-label">Mạch chia áp có Cảm biến ánh sáng</span>
-	<span class="node-label">In</span>
+<div style="position:absolute; bottom:2px; font-size:9px; color:#94a3b8;">
+        (Powered by Battery)
+    </div>	
+<span class="node-label">In (+)</span>
     <div class="node" data-id="l-in"></div>
     <span class="node-label">V-Sig: <b id="v-ldr">0</b>V</span> <div class="node" data-id="l-out"></div>
 </div>
 
-<div class="component" id="opamp" data-name="Bộ so sánh (Op-amp)" data-desc="So sánh áp tại V+ và V-. Nếu V+ > V-, đầu ra Out sẽ xuất 9V để bật đèn. Chân V+ nối vào V-Sig, chân V- nối vào V-Ref (tức là tín hiệu Vào > tín hiệu Ngưỡng)" style="width: 100px; flex-direction: row; justify-content: space-between; padding: 10px;">
-<span class="guide-label">"Bộ não" so sánh</span>    
+<div class="component" id="opamp" data-name="Bộ so sánh (Op-amp)" data-desc="So sánh áp tại V+ và V-. Nếu V+ > V-, đầu ra Out sẽ xuất 9V để bật đèn. Chân V+ nối vào V-Sig, chân V- nối vào V-Ref (tức là tín hiệu Vào > tín hiệu Ngưỡng). Để mạch trông gọn gàng, thầy đã nối sẵn nguồn điện ngầm cho Op-amp này rồi. Trong thực tế, bạn sẽ cần nối chân V+ vào cực Dương và V- vào cực Âm của pin thì nó mới 'sống' được nhé!" style="width: 100px; flex-direction: row; justify-content: space-between; padding: 10px;">
+<span class="guide-label">"OP-am" so sánh</span>    
+<div style="position:absolute; bottom:2px; font-size:9px; color:#94a3b8;">
+        (Powered by Battery)
+    </div>
 <div style="display: flex; flex-direction: column; justify-content: space-around; height: 100%;">
         <div class="node-box">
             <span class="node-label" style="color: #f59e0b;">V-: <b id="v-op-n">?</b>V</span>
