@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Mô phỏng dao động điều hòa - 3 chế độ</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #667085;
+      --primary: #2563eb;
+      --primary2: #1d4ed8;
+      --green: #16a34a;
+      --orange: #f97316;
+      --red: #dc2626;
+      --purple: #7c3aed;
+      --border: #d7deea;
+      --soft: #eef4ff;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #eef5ff 0%, #f8fafc 100%);
+      color: var(--text);
+      overscroll-behavior: none;
+    }
+
+    .app {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 12px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb, #38bdf8);
+      color: white;
+      border-radius: 22px;
+      padding: 16px 14px;
+      box-shadow: var(--shadow);
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: clamp(20px, 5vw, 34px);
+      line-height: 1.15;
+      margin: 0 0 6px;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      margin: 0;
+      opacity: 0.92;
+      font-size: 14px;
+    }
+
+    .mode-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      box-shadow: var(--shadow);
+      margin-bottom: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 9;
+    }
+
+    .mode-title {
+      font-weight: 800;
+      margin-bottom: 10px;
+      font-size: 15px;
+    }
+
+    .mode-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .mode-btn {
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 10px 6px;
+      min-height: 46px;
+      font-weight: 800;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 13px;
+      touch-action: manipulation;
+    }
+
+    .mode-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .main-col, .side-col {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-weight: 900;
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    canvas {
+      width: 100%;
+      display: block;
+      background: #ffffff;
+      border-radius: 14px;
+      border: 1px solid #dce5f2;
+      touch-action: none;
+    }
+
+    #springCanvas { height: 210px; }
+    #graphCanvas { height: 270px; }
+    #circleCanvas { height: 260px; }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .control {
+      background: #f8fafc;
+      border: 1px solid #e4ebf5;
+      border-radius: 14px;
+      padding: 10px;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    label span:last-child {
+      color: var(--primary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+      height: 30px;
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    button, select {
+      font-family: inherit;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 14px;
+      background: var(--primary);
+      color: white;
+      padding: 12px 8px;
+      min-height: 44px;
+      font-weight: 900;
+      cursor: pointer;
+      font-size: 14px;
+      touch-action: manipulation;
+    }
+
+    .btn.secondary { background: #334155; }
+    .btn.green { background: var(--green); }
+    .btn.orange { background: var(--orange); }
+    .btn.red { background: var(--red); }
+    .btn.purple { background: var(--purple); }
+    .btn:active { transform: translateY(1px); }
+
+    .chips, .toggles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .chip, .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 10px;
+      background: #f8fafc;
+      font-weight: 800;
+      font-size: 13px;
+      user-select: none;
+    }
+
+    .toggle input { accent-color: var(--primary); transform: scale(1.15); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .stat {
+      background: #f8fafc;
+      border: 1px solid #e4ebf5;
+      border-radius: 14px;
+      padding: 10px;
+      min-height: 64px;
+    }
+
+    .stat .name {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .stat .value {
+      font-size: 18px;
+      font-weight: 950;
+      font-variant-numeric: tabular-nums;
+      word-break: break-word;
+    }
+
+    .hidden-answer .answer-value {
+      filter: blur(7px);
+      user-select: none;
+    }
+
+    .section-level-2, .section-level-3 { display: none; }
+    body.level-2 .section-level-2, body.level-3 .section-level-2, body.level-3 .section-level-3 { display: block; }
+
+    .tool-panel {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 14px;
+      padding: 10px;
+      margin-top: 10px;
+    }
+
+    .small-text {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .coord-box, .quiz-box {
+      background: var(--soft);
+      border: 1px solid #bfdbfe;
+      border-radius: 14px;
+      padding: 10px;
+      font-size: 14px;
+      font-weight: 800;
+      margin-top: 8px;
+    }
+
+    .formula {
+      line-height: 1.55;
+      font-size: 14px;
+      color: #334155;
+    }
+
+    .formula code {
+      background: #eef2ff;
+      color: #1d4ed8;
+      border-radius: 8px;
+      padding: 2px 6px;
+      font-weight: 800;
+    }
+
+    .prediction-options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .option-btn {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      border-radius: 12px;
+      padding: 10px;
+      font-weight: 850;
+      min-height: 42px;
+    }
+
+    .option-btn.correct { background: #dcfce7; border-color: #22c55e; }
+    .option-btn.wrong { background: #fee2e2; border-color: #ef4444; }
+
+    .problem-output {
+      white-space: pre-wrap;
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 860px) {
+      .app { padding: 10px; }
+      .layout { grid-template-columns: 1fr; }
+      .side-col { order: 2; }
+      .main-col { order: 1; }
+      .controls-grid { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      header { padding: 14px; }
+      .mode-card { border-radius: 16px; }
+      #springCanvas { height: 190px; }
+      #graphCanvas { height: 260px; }
+      #circleCanvas { height: 250px; }
+    }
+
+    @media (max-width: 420px) {
+      .stats { grid-template-columns: 1fr; }
+      .btn-row { grid-template-columns: 1fr; }
+      .mode-buttons { grid-template-columns: 1fr; }
+      .mode-btn { min-height: 42px; }
+      .prediction-options { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body class="level-1">
+  <div class="app">
+    <header>
+      <h1>Mô phỏng dao động điều hòa</h1>
+      <p class="subtitle">Kéo vật để kích thích dao động, quan sát đồ thị x(t), v(t), a(t) và khám phá biên độ, chu kì, pha.</p>
+    </header>
+
+    <section class="mode-card">
+      <div class="mode-title">Chọn chế độ học tập</div>
+      <div class="mode-buttons">
+        <button class="mode-btn active" data-mode="basic">Cơ bản</button>
+        <button class="mode-btn" data-mode="medium">Trung bình</button>
+        <button class="mode-btn" data-mode="advanced">Nâng cao</button>
+      </div>
+    </section>
+
+    <div class="layout">
+      <main class="main-col">
+        <section class="card">
+          <div class="card-title">
+            <span>1. Kéo - thả vật dao động</span>
+            <span class="hint">Chạm/kéo vật màu xanh</span>
+          </div>
+          <canvas id="springCanvas"></canvas>
+          <div class="chips">
+            <span class="chip">v: vector vận tốc</span>
+            <span class="chip">a: vector gia tốc</span>
+            <span class="chip">O: vị trí cân bằng</span>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-title">
+            <span>2. Đồ thị dao động</span>
+            <span class="hint">Bật/tắt đường biểu diễn</span>
+          </div>
+          <div class="toggles">
+            <label class="toggle"><input type="checkbox" id="showX" checked /> x(t)</label>
+            <label class="toggle"><input type="checkbox" id="showV" /> v(t)</label>
+            <label class="toggle"><input type="checkbox" id="showA" /> a(t)</label>
+          </div>
+          <canvas id="graphCanvas"></canvas>
+
+          <div class="section-level-2 tool-panel">
+            <strong>Công cụ đo và đọc tọa độ</strong>
+            <p class="small-text">Chạm vào đồ thị để đọc tọa độ. Bật “Đo chu kì”, rồi chạm hai đỉnh liên tiếp hoặc hai vị trí cùng pha trên đồ thị.</p>
+            <div class="btn-row">
+              <button class="btn secondary" id="measureBtn">Bật đo chu kì</button>
+              <button class="btn orange" id="clearMeasureBtn">Xóa điểm đo</button>
+              <button class="btn purple" id="hideAnswerBtn">Ẩn đáp án</button>
+            </div>
+            <div class="coord-box" id="coordBox">Tọa độ: chưa chọn</div>
+            <div class="coord-box" id="measureBox">Đo chu kì: chưa có dữ liệu</div>
+          </div>
+        </section>
+
+        <section class="card section-level-3">
+          <div class="card-title">
+            <span>3. Quỹ đạo tròn và pha dao động</span>
+            <span class="hint">Vừa biểu diễn chuyển động tròn đều, vừa đọc pha θ = ωt + φ</span>
+          </div>
+          <canvas id="circleCanvas"></canvas>
+        </section>
+      </main>
+
+      <aside class="side-col">
+        <section class="card">
+          <div class="card-title">Điều khiển</div>
+          <div class="controls-grid">
+            <div class="control">
+              <label>Khối lượng m <span id="mVal">0.50 kg</span></label>
+              <input type="range" id="mSlider" min="0.10" max="2.00" step="0.05" value="0.50" />
+            </div>
+            <div class="control">
+              <label>Độ cứng k <span id="kVal">5 N/m</span></label>
+              <input type="range" id="kSlider" min="5" max="80" step="1" value="5" />
+            </div>
+            <div class="control section-level-2">
+              <label>Tốc độ mô phỏng <span id="speedVal">1.00×</span></label>
+              <input type="range" id="speedSlider" min="0.25" max="4" step="0.25" value="1" />
+            </div>
+            <div class="control section-level-2">
+              <label>Ma sát/tắt dần <span id="dampingVal">0.000</span></label>
+              <input type="range" id="dampingSlider" min="0" max="0.06" step="0.005" value="0" />
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn green" id="playBtn">Chạy</button>
+            <button class="btn secondary" id="pauseBtn">Dừng</button>
+            <button class="btn red" id="resetBtn">Đặt lại</button>
+          </div>
+        </section>
+
+        <section class="card" id="statsCard">
+          <div class="card-title">Thông số tức thời</div>
+          <div class="stats">
+            <div class="stat"><div class="name">Thời gian</div><div class="value" id="tNow">0.00 s</div></div>
+            <div class="stat"><div class="name">Li độ x</div><div class="value" id="xNow">0.0 cm</div></div>
+            <div class="stat"><div class="name">Vận tốc v</div><div class="value" id="vNow">0.0 cm/s</div></div>
+            <div class="stat"><div class="name">Gia tốc a</div><div class="value" id="aNow">0.0 cm/s²</div></div>
+            <div class="stat"><div class="name">Biên độ A</div><div class="value answer-value" id="aAmp">0.0 cm</div></div>
+            <div class="stat"><div class="name">Chu kì T</div><div class="value answer-value" id="period">0.00 s</div></div>
+            <div class="stat"><div class="name">Tần số góc ω</div><div class="value answer-value" id="omegaVal">0.00 rad/s</div></div>
+            <div class="stat"><div class="name">Pha dao động </div><div class="value answer-value" id="phiVal">0.00 rad</div></div>
+          </div>
+        </section>
+
+        <section class="card section-level-3">
+          <div class="card-title">Dự đoán nhanh</div>
+          <div class="quiz-box" id="predictionQuestion">Bấm “Tạo câu hỏi” để phần mềm dừng và yêu cầu dự đoán vị trí của vật sau một khoảng thời gian.</div>
+          <button class="btn purple" id="makePredictionBtn" style="width:100%;margin-top:8px;">Tạo câu hỏi dự đoán</button>
+          <div class="prediction-options" id="predictionOptions"></div>
+        </section>
+
+        <section class="card section-level-3">
+          <div class="card-title">Tạo đề nhanh</div>
+          <p class="small-text">Tạo nhanh một bài tập dựa trên thông số hiện tại để học sinh xác định A, T, ω, φ, vmax, amax.</p>
+          <button class="btn green" id="makeProblemBtn" style="width:100%;">Tạo đề từ mô phỏng</button>
+          <div class="problem-output" id="problemOutput">Chưa tạo đề.</div>
+        </section>
+
+        <section class="card">
+          <div class="card-title">Công thức sử dụng</div>
+          <div class="formula">
+            <p><code>x = A cos(ωt + φ)</code></p>
+            <p><code>v = -ωA sin(ωt + φ)</code></p>
+            <p><code>a = -ω²A cos(ωt + φ) = -ω²x</code></p>
+            <p><code>T = 2π√(m/k)</code></p>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const springCanvas = document.getElementById('springCanvas');
+    const graphCanvas = document.getElementById('graphCanvas');
+    const circleCanvas = document.getElementById('circleCanvas');
+    const sctx = springCanvas.getContext('2d');
+    const gctx = graphCanvas.getContext('2d');
+    const cctx = circleCanvas.getContext('2d');
+
+    const els = {
+      mSlider: document.getElementById('mSlider'),
+      kSlider: document.getElementById('kSlider'),
+      speedSlider: document.getElementById('speedSlider'),
+      dampingSlider: document.getElementById('dampingSlider'),
+      mVal: document.getElementById('mVal'),
+      kVal: document.getElementById('kVal'),
+      speedVal: document.getElementById('speedVal'),
+      dampingVal: document.getElementById('dampingVal'),
+      playBtn: document.getElementById('playBtn'),
+      pauseBtn: document.getElementById('pauseBtn'),
+      resetBtn: document.getElementById('resetBtn'),
+      showX: document.getElementById('showX'),
+      showV: document.getElementById('showV'),
+      showA: document.getElementById('showA'),
+      measureBtn: document.getElementById('measureBtn'),
+      clearMeasureBtn: document.getElementById('clearMeasureBtn'),
+      hideAnswerBtn: document.getElementById('hideAnswerBtn'),
+      coordBox: document.getElementById('coordBox'),
+      measureBox: document.getElementById('measureBox'),
+      statsCard: document.getElementById('statsCard'),
+      makePredictionBtn: document.getElementById('makePredictionBtn'),
+      predictionQuestion: document.getElementById('predictionQuestion'),
+      predictionOptions: document.getElementById('predictionOptions'),
+      makeProblemBtn: document.getElementById('makeProblemBtn'),
+      problemOutput: document.getElementById('problemOutput'),
+      tNow: document.getElementById('tNow'), xNow: document.getElementById('xNow'), vNow: document.getElementById('vNow'), aNow: document.getElementById('aNow'),
+      aAmp: document.getElementById('aAmp'), period: document.getElementById('period'), omegaVal: document.getElementById('omegaVal'), phiVal: document.getElementById('phiVal')
+    };
+
+    let mode = 'basic';
+    let running = false;
+    let dragging = false;
+    let t = 0;
+    let lastTime = null;
+    let m = 0.5;
+    let k = 20;
+    let damping = 0;
+    let speed = 1;
+    let x = 0.08;
+    let v = 0;
+    let baseA = 0.08;
+    let phi0 = 0;
+    let history = [];
+    let graphWindow = 8;
+    let measuring = false;
+    let measurePoints = [];
+    let coordPoint = null;
+    let prediction = null;
+
+    const colors = {
+      x: '#2563eb',
+      v: '#16a34a',
+      a: '#dc2626',
+      grid: '#e5edf7',
+      axis: '#64748b'
+    };
+
+    function resizeCanvas(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.round(rect.width * dpr));
+      canvas.height = Math.max(1, Math.round(rect.height * dpr));
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function resizeAll() {
+      [springCanvas, graphCanvas, circleCanvas].forEach(resizeCanvas);
+      drawAll();
+    }
+
+    function omega() { return Math.sqrt(k / m); }
+    function period() { return 2 * Math.PI / omega(); }
+    function amp() { return Math.sqrt(x * x + (v / omega()) * (v / omega())); }
+    function phi() { return Math.atan2(-v / omega(), x); }
+
+    function syncParams() {
+      m = parseFloat(els.mSlider.value);
+      k = parseFloat(els.kSlider.value);
+      speed = parseFloat(els.speedSlider?.value || 1);
+      damping = parseFloat(els.dampingSlider?.value || 0);
+      els.mVal.textContent = m.toFixed(2) + ' kg';
+      els.kVal.textContent = k.toFixed(0) + ' N/m';
+      if (els.speedVal) els.speedVal.textContent = speed.toFixed(2) + '×';
+      if (els.dampingVal) els.dampingVal.textContent = damping.toFixed(3);
+      updateStats();
+      drawAll();
+    }
+
+    function reset() {
+      running = false;
+      t = 0;
+      x = 0.08;
+      v = 0;
+      baseA = amp();
+      phi0 = phi();
+      history = [];
+      measurePoints = [];
+      coordPoint = null;
+      prediction = null;
+      els.predictionOptions.innerHTML = '';
+      els.predictionQuestion.textContent = 'Bấm “Tạo câu hỏi” để phần mềm dừng và yêu cầu dự đoán vị trí của vật sau một khoảng thời gian.';
+      drawAll();
+      updateStats();
+    }
+
+    function step(dt) {
+      dt *= speed;
+      if (damping > 0) {
+        const a = -(k / m) * x - 2 * damping * omega() * v;
+        v += a * dt;
+        x += v * dt;
+      } else {
+        const w = omega();
+        const A = amp();
+        const ph = phi();
+        t += dt;
+        x = A * Math.cos(w * dt + ph);
+        v = -w * A * Math.sin(w * dt + ph);
+        // t already updated above; expression is one incremental exact step using current ph.
+        return;
+      }
+      t += dt;
+    }
+
+    function currentA() { return amp(); }
+    function currentV() { return v; }
+    function currentAcc() { return -(k / m) * x - 2 * damping * omega() * v; }
+
+    function updateHistory() {
+      const point = { t, x, v: currentV(), a: currentAcc() };
+      history.push(point);
+      const minT = Math.max(0, t - graphWindow);
+      while (history.length && history[0].t < minT) history.shift();
+    }
+
+    function updateStats() {
+      const A = currentA();
+      const w = omega();
+      els.tNow.textContent = t.toFixed(2) + ' s';
+      els.xNow.textContent = (x * 100).toFixed(1) + ' cm';
+      els.vNow.textContent = (currentV() * 100).toFixed(1) + ' cm/s';
+      els.aNow.textContent = (currentAcc() * 100).toFixed(1) + ' cm/s²';
+      els.aAmp.textContent = (A * 100).toFixed(1) + ' cm';
+      els.period.textContent = period().toFixed(2) + ' s';
+      els.omegaVal.textContent = w.toFixed(2) + ' rad/s';
+      els.phiVal.textContent = phi().toFixed(2) + ' rad';
+    }
+
+    function drawArrow(ctx, x1, y1, x2, y2, color, label) {
+      const head = 9;
+      const ang = Math.atan2(y2 - y1, x2 - x1);
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - head * Math.cos(ang - Math.PI / 6), y2 - head * Math.sin(ang - Math.PI / 6));
+      ctx.lineTo(x2 - head * Math.cos(ang + Math.PI / 6), y2 - head * Math.sin(ang + Math.PI / 6));
+      ctx.closePath(); ctx.fill();
+      ctx.font = 'bold 14px system-ui';
+      ctx.fillText(label, x2 + 6, y2 - 6);
+      ctx.restore();
+    }
+
+    function drawSpring() {
+      const rect = springCanvas.getBoundingClientRect();
+      const w = rect.width, h = rect.height;
+      sctx.clearRect(0, 0, w, h);
+      const midY = h * 0.52;
+      const wallX = 24;
+      const eqX = w * 0.52;
+      const scale = Math.min(900, w * 3.1);
+      const massX = eqX + x * scale;
+      const massW = Math.min(64, Math.max(46, w * 0.12));
+      const massH = 54;
+
+      sctx.fillStyle = '#f8fafc';
+      sctx.fillRect(0, 0, w, h);
+
+      // grid and special positions
+      sctx.strokeStyle = '#e2e8f0'; sctx.lineWidth = 1;
+      for (let i = -2; i <= 2; i++) {
+        const px = eqX + i * 0.05 * scale;
+        sctx.beginPath(); sctx.moveTo(px, 20); sctx.lineTo(px, h - 28); sctx.stroke();
+      }
+      sctx.strokeStyle = '#94a3b8'; sctx.setLineDash([5, 5]);
+      sctx.beginPath(); sctx.moveTo(eqX, 18); sctx.lineTo(eqX, h - 22); sctx.stroke();
+      sctx.setLineDash([]);
+      sctx.fillStyle = '#475569'; sctx.font = 'bold 13px system-ui';
+      sctx.fillText('O', eqX + 5, h - 28);
+      sctx.fillText('-A', eqX - currentA() * scale - 10, h - 28);
+      sctx.fillText('+A', eqX + currentA() * scale - 10, h - 28);
+
+      // wall
+      sctx.fillStyle = '#334155';
+      sctx.fillRect(wallX - 8, midY - 70, 12, 130);
+      for (let yy = midY - 70; yy < midY + 70; yy += 12) {
+        sctx.strokeStyle = '#94a3b8';
+        sctx.beginPath(); sctx.moveTo(wallX - 8, yy + 10); sctx.lineTo(wallX + 10, yy - 4); sctx.stroke();
+      }
+
+      // spring
+      const startX = wallX + 4;
+      const endX = massX - massW / 2;
+      const coils = 12;
+      const ampY = 18;
+      sctx.strokeStyle = '#0f172a';
+      sctx.lineWidth = 3;
+      sctx.beginPath();
+      sctx.moveTo(startX, midY);
+      const len = Math.max(30, endX - startX);
+      for (let i = 0; i <= coils * 2; i++) {
+        const px = startX + (len * i) / (coils * 2);
+        const py = midY + (i % 2 === 0 ? -ampY : ampY);
+        sctx.lineTo(px, py);
+      }
+      sctx.lineTo(endX, midY);
+      sctx.stroke();
+
+      // track
+      sctx.strokeStyle = '#94a3b8'; sctx.lineWidth = 4;
+      sctx.beginPath(); sctx.moveTo(wallX, midY + massH/2 + 10); sctx.lineTo(w - 20, midY + massH/2 + 10); sctx.stroke();
+
+      // mass
+      const grd = sctx.createLinearGradient(massX - massW/2, midY - massH/2, massX + massW/2, midY + massH/2);
+      grd.addColorStop(0, '#60a5fa'); grd.addColorStop(1, '#1d4ed8');
+      sctx.fillStyle = grd;
+      roundRect(sctx, massX - massW/2, midY - massH/2, massW, massH, 14, true, false);
+      sctx.strokeStyle = '#1e40af'; sctx.lineWidth = 2;
+      roundRect(sctx, massX - massW/2, midY - massH/2, massW, massH, 14, false, true);
+      sctx.fillStyle = 'white'; sctx.font = 'bold 18px system-ui'; sctx.textAlign = 'center';
+      sctx.fillText('m', massX, midY + 6); sctx.textAlign = 'start';
+
+      // vectors
+      const vy = midY - 62;
+      const ay = midY + 78;
+      const vLen = Math.max(-70, Math.min(70, currentV() * 60));
+      const aLen = Math.max(-70, Math.min(70, currentAcc() * 15));
+      if (Math.abs(vLen) > 6) drawArrow(sctx, massX, vy, massX + vLen, vy, colors.v, 'v');
+      if (Math.abs(aLen) > 6) drawArrow(sctx, massX, ay, massX + aLen, ay, colors.a, 'a');
+
+      // instant data
+      sctx.fillStyle = '#0f172a'; sctx.font = '700 13px system-ui';
+      sctx.fillText(`x = ${(x*100).toFixed(1)} cm`, 14, 22);
+      sctx.fillText(`v = ${(currentV()*100).toFixed(1)} cm/s`, 14, 42);
+      sctx.fillText(`a = ${(currentAcc()*100).toFixed(1)} cm/s²`, 14, 62);
+    }
+
+    function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+      if (fill) ctx.fill();
+      if (stroke) ctx.stroke();
+    }
+
+    function graphScaleValues() {
+      const A = Math.max(0.03, currentA());
+      const maxX = A;
+      const maxV = omega() * A || 0.1;
+      const maxAcc = omega() * omega() * A || 0.1;
+      return { maxX, maxV, maxAcc };
+    }
+
+    function valueToY(value, maxAbs, top, bottom) {
+      const mid = (top + bottom) / 2;
+      const half = (bottom - top) / 2 * 0.82;
+      return mid - (value / maxAbs) * half;
+    }
+
+    function timeToX(tt, left, right, tMin, tMax) {
+      return left + ((tt - tMin) / (tMax - tMin)) * (right - left);
+    }
+
+    function drawGraph() {
+      const rect = graphCanvas.getBoundingClientRect();
+      const w = rect.width, h = rect.height;
+      gctx.clearRect(0, 0, w, h);
+      gctx.fillStyle = '#fff'; gctx.fillRect(0, 0, w, h);
+      const left = 44, right = w - 12, top = 20, bottom = h - 34;
+      const tMax = Math.max(graphWindow, t);
+      const tMin = Math.max(0, tMax - graphWindow);
+      const scales = graphScaleValues();
+      const yMaxCommon = 1;
+
+      // grid
+      gctx.strokeStyle = colors.grid; gctx.lineWidth = 1;
+      for (let i = 0; i <= 8; i++) {
+        const xx = left + (right-left)*i/8;
+        gctx.beginPath(); gctx.moveTo(xx, top); gctx.lineTo(xx, bottom); gctx.stroke();
+      }
+      for (let i = 0; i <= 6; i++) {
+        const yy = top + (bottom-top)*i/6;
+        gctx.beginPath(); gctx.moveTo(left, yy); gctx.lineTo(right, yy); gctx.stroke();
+      }
+      const midY = (top + bottom) / 2;
+      gctx.strokeStyle = colors.axis; gctx.lineWidth = 1.5;
+      gctx.beginPath(); gctx.moveTo(left, midY); gctx.lineTo(right, midY); gctx.stroke();
+      gctx.beginPath(); gctx.moveTo(left, top); gctx.lineTo(left, bottom); gctx.stroke();
+
+      gctx.fillStyle = '#475569'; gctx.font = '12px system-ui';
+      gctx.fillText('t (s)', right - 28, h - 10);
+      gctx.fillText(tMin.toFixed(1), left, h - 10);
+      gctx.fillText(tMax.toFixed(1), right - 30, h - 10);
+      gctx.fillText('0', left - 18, midY + 4);
+
+      const drawSeries = (key, color, label, maxAbs) => {
+        if (history.length < 2) return;
+        gctx.strokeStyle = color; gctx.lineWidth = 2.5; gctx.beginPath();
+        history.forEach((p, i) => {
+          const normalized = p[key] / maxAbs;
+          const yy = valueToY(normalized, yMaxCommon, top, bottom);
+          const xx = timeToX(p.t, left, right, tMin, tMax);
+          if (i === 0) gctx.moveTo(xx, yy); else gctx.lineTo(xx, yy);
+        });
+        gctx.stroke();
+        gctx.fillStyle = color; gctx.font = 'bold 13px system-ui';
+        gctx.fillText(label, left + 8 + (label === 'v(t)' ? 52 : label === 'a(t)' ? 104 : 0), top + 14);
+      };
+
+      if (els.showX.checked) drawSeries('x', colors.x, 'x(t)', scales.maxX);
+      if (els.showV.checked) drawSeries('v', colors.v, 'v(t)', scales.maxV);
+      if (els.showA.checked) drawSeries('a', colors.a, 'a(t)', scales.maxAcc);
+
+      // time cursor
+      const cx = timeToX(t, left, right, tMin, tMax);
+      gctx.strokeStyle = '#0f172a'; gctx.setLineDash([4, 4]);
+      gctx.beginPath(); gctx.moveTo(cx, top); gctx.lineTo(cx, bottom); gctx.stroke();
+      gctx.setLineDash([]);
+
+      // coord point
+      if (coordPoint) {
+        const px = timeToX(coordPoint.t, left, right, tMin, tMax);
+        const py = valueToY(coordPoint.x / scales.maxX, yMaxCommon, top, bottom);
+        gctx.fillStyle = '#f97316';
+        gctx.beginPath(); gctx.arc(px, py, 5, 0, Math.PI*2); gctx.fill();
+      }
+
+      // measurement points
+      measurePoints.forEach((mp, idx) => {
+        const px = timeToX(mp.t, left, right, tMin, tMax);
+        gctx.strokeStyle = '#7c3aed'; gctx.lineWidth = 2; gctx.setLineDash([6,3]);
+        gctx.beginPath(); gctx.moveTo(px, top); gctx.lineTo(px, bottom); gctx.stroke();
+        gctx.setLineDash([]);
+        gctx.fillStyle = '#7c3aed'; gctx.font = 'bold 12px system-ui';
+        gctx.fillText('M' + (idx + 1), px + 4, top + 28);
+      });
+    }
+
+    function drawRoundRect(ctx, x, y, w, h, r) {
+      const rr = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + rr, y);
+      ctx.lineTo(x + w - rr, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+      ctx.lineTo(x + w, y + h - rr);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+      ctx.lineTo(x + rr, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+      ctx.lineTo(x, y + rr);
+      ctx.quadraticCurveTo(x, y, x + rr, y);
+    }
+
+    function drawCircle() {
+      const rect = circleCanvas.getBoundingClientRect();
+      const w = rect.width, h = rect.height;
+      cctx.clearRect(0,0,w,h);
+      cctx.fillStyle = '#fff'; cctx.fillRect(0,0,w,h);
+
+      const cx = w * 0.30;
+      const cy = h * 0.50;
+      const R = Math.min(h * 0.30, w * 0.22, 86);
+      const theta = omega() * t + phi();
+      const norm = ((theta % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+      const px = cx + R * Math.cos(theta);
+      const py = cy - R * Math.sin(theta);
+      const oscX = w * 0.76;
+      const oscY = cy;
+      const projY = cy - R * Math.sin(theta);
+
+      // Vòng tròn pha kiêm chuyển động tròn đều
+      cctx.strokeStyle = '#cbd5e1'; cctx.lineWidth = 2;
+      cctx.beginPath(); cctx.arc(cx, cy, R, 0, Math.PI*2); cctx.stroke();
+      cctx.beginPath(); cctx.moveTo(cx - R - 8, cy); cctx.lineTo(cx + R + 8, cy); cctx.stroke();
+      cctx.beginPath(); cctx.moveTo(cx, cy - R - 8); cctx.lineTo(cx, cy + R + 8); cctx.stroke();
+
+      // Cung biểu diễn pha hiện tại, né khỏi phần hình chiếu
+      cctx.strokeStyle = '#7c3aed'; cctx.lineWidth = 4;
+      cctx.beginPath(); cctx.arc(cx, cy, R * 0.72, 0, -norm, true); cctx.stroke();
+
+      // Nhãn pha quanh vòng tròn
+      cctx.fillStyle = '#475569'; cctx.font = 'bold 12px system-ui'; cctx.textAlign = 'center';
+      cctx.fillText('0', cx + R + 16, cy + 4);
+      cctx.fillText('π/2', cx, cy - R - 12);
+      cctx.fillText('π', cx - R - 18, cy + 4);
+      cctx.fillText('3π/2', cx, cy + R + 20);
+
+      // Bán kính quay
+      cctx.strokeStyle = '#2563eb'; cctx.lineWidth = 3;
+      cctx.beginPath(); cctx.moveTo(cx, cy); cctx.lineTo(px, py); cctx.stroke();
+      cctx.fillStyle = '#2563eb'; cctx.beginPath(); cctx.arc(px, py, 7, 0, Math.PI*2); cctx.fill();
+
+      // Hình chiếu sang dao động
+      cctx.strokeStyle = '#94a3b8'; cctx.setLineDash([5,5]); cctx.lineWidth = 2;
+      cctx.beginPath(); cctx.moveTo(px, py); cctx.lineTo(oscX, projY); cctx.stroke();
+      cctx.setLineDash([]);
+
+      cctx.strokeStyle = '#0f172a'; cctx.lineWidth = 4;
+      cctx.beginPath(); cctx.moveTo(oscX, cy - R); cctx.lineTo(oscX, cy + R); cctx.stroke();
+      cctx.fillStyle = '#1d4ed8';
+      cctx.beginPath(); cctx.arc(oscX, projY, 12, 0, Math.PI*2); cctx.fill();
+
+      // Hộp giá trị pha đặt lệch ra khỏi vòng tròn để dễ đọc
+      let boxX = cx + R + 34;
+      let boxY = Math.max(12, cy - R - 6);
+      const boxW = Math.min(172, w - boxX - 10);
+      if (boxW < 132) {
+        boxX = Math.max(10, w - 184);
+        boxY = 12;
+      }
+      const finalW = Math.min(174, w - boxX - 10);
+      cctx.fillStyle = '#f5f3ff';
+      cctx.strokeStyle = '#c4b5fd';
+      cctx.lineWidth = 1.5;
+      drawRoundRect(cctx, boxX, boxY, finalW, 64, 12);
+      cctx.fill(); cctx.stroke();
+      cctx.textAlign = 'left';
+      cctx.fillStyle = '#5b21b6'; cctx.font = 'bold 12px system-ui';
+      cctx.fillText('Pha hiện tại', boxX + 10, boxY + 20);
+      cctx.fillStyle = '#0f172a'; cctx.font = 'bold 15px system-ui';
+      cctx.fillText('θ = ' + norm.toFixed(2) + ' rad', boxX + 10, boxY + 42);
+      cctx.fillStyle = '#64748b'; cctx.font = 'bold 11px system-ui';
+      cctx.fillText('≈ ' + (norm / Math.PI).toFixed(2) + 'π', boxX + 10, boxY + 58);
+
+      cctx.fillStyle = '#475569'; cctx.font = 'bold 12px system-ui'; cctx.textAlign = 'center';
+      cctx.fillText('Chuyển động tròn đều + pha', cx, h - 16);
+      cctx.fillText('Hình chiếu dao động', oscX, h - 16);
+      cctx.textAlign = 'start';
+    }
+
+    function drawAll() {
+      drawSpring();
+      drawGraph();
+      if (mode === 'advanced') { drawCircle(); }
+    }
+
+    function animate(ts) {
+      if (lastTime == null) lastTime = ts;
+      const rawDt = Math.min(0.035, (ts - lastTime) / 1000);
+      lastTime = ts;
+      if (running && !dragging) {
+        step(rawDt);
+        updateHistory();
+        updateStats();
+      }
+      drawAll();
+      requestAnimationFrame(animate);
+    }
+
+    function pointerPos(canvas, ev) {
+      const rect = canvas.getBoundingClientRect();
+      const p = ev.touches ? ev.touches[0] : ev;
+      return { x: p.clientX - rect.left, y: p.clientY - rect.top, rect };
+    }
+
+    function startDrag(ev) {
+      ev.preventDefault();
+      const { x: px, y: py, rect } = pointerPos(springCanvas, ev);
+      const eqX = rect.width * 0.52;
+      const scale = Math.min(900, rect.width * 3.1);
+      const massX = eqX + x * scale;
+      const midY = rect.height * 0.52;
+      if (Math.abs(px - massX) < 70 && Math.abs(py - midY) < 70) {
+        dragging = true;
+        running = false;
+        v = 0;
+      }
+    }
+
+    function moveDrag(ev) {
+      if (!dragging) return;
+      ev.preventDefault();
+      const { x: px, rect } = pointerPos(springCanvas, ev);
+      const eqX = rect.width * 0.52;
+      const scale = Math.min(900, rect.width * 3.1);
+      const maxX = Math.min(0.16, rect.width / scale * 0.32);
+      x = Math.max(-maxX, Math.min(maxX, (px - eqX) / scale));
+      v = 0;
+      t = 0;
+      history = [{ t, x, v, a: currentAcc() }];
+      updateStats();
+      drawAll();
+    }
+
+    function endDrag(ev) {
+      if (!dragging) return;
+      ev.preventDefault();
+      dragging = false;
+      baseA = amp();
+      phi0 = phi();
+      history = [{ t, x, v, a: currentAcc() }];
+      running = true;
+    }
+
+    function graphClick(ev) {
+      if (mode === 'basic') return;
+      const { x: px, rect } = pointerPos(graphCanvas, ev);
+      const left = 44, right = rect.width - 12;
+      const tMax = Math.max(graphWindow, t);
+      const tMin = Math.max(0, tMax - graphWindow);
+      const tt = tMin + ((px - left) / (right - left)) * (tMax - tMin);
+      const closest = history.reduce((best, p) => Math.abs(p.t - tt) < Math.abs(best.t - tt) ? p : best, history[0] || {t:0,x:0,v:0,a:0});
+      coordPoint = closest;
+      els.coordBox.textContent = `Tọa độ: t = ${closest.t.toFixed(2)} s; x = ${(closest.x*100).toFixed(1)} cm; v = ${(closest.v*100).toFixed(1)} cm/s; a = ${(closest.a*100).toFixed(1)} cm/s²`;
+      if (measuring) {
+        measurePoints.push({ t: closest.t });
+        if (measurePoints.length > 2) measurePoints.shift();
+        if (measurePoints.length === 2) {
+          const Tm = Math.abs(measurePoints[1].t - measurePoints[0].t);
+          els.measureBox.textContent = `Đo chu kì: Δt = ${Tm.toFixed(2)} s. Chu kì lí thuyết T = ${period().toFixed(2)} s.`;
+        } else {
+          els.measureBox.textContent = 'Đo chu kì: đã chọn M1, chọn thêm M2.';
+        }
+      }
+      drawAll();
+    }
+
+    function setMode(newMode) {
+      mode = newMode;
+      document.body.classList.remove('level-1','level-2','level-3');
+      document.body.classList.add(newMode === 'basic' ? 'level-1' : newMode === 'medium' ? 'level-2' : 'level-3');
+      document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.mode === newMode));
+      if (newMode === 'basic') {
+        els.statsCard.classList.remove('hidden-answer');
+        measuring = false;
+      }
+      setTimeout(resizeAll, 50);
+    }
+
+    function makePrediction() {
+      running = false;
+      const delta = period() / 4;
+      const w = omega();
+      const A = amp();
+      const ph = phi();
+      const xFuture = A * Math.cos(w * delta + ph);
+      prediction = { xFuture };
+      els.predictionQuestion.textContent = `Dự đoán: sau ${delta.toFixed(2)} s, vật sẽ ở vị trí nào?`;
+      const options = [
+        { label: 'Gần biên dương (+A)', test: xFuture > 0.55 * A },
+        { label: 'Gần vị trí cân bằng O', test: Math.abs(xFuture) <= 0.25 * A },
+        { label: 'Gần biên âm (-A)', test: xFuture < -0.55 * A },
+        { label: 'Bên phải O', test: xFuture > 0 }
+      ];
+      let correctIndex = options.findIndex(o => o.test);
+      if (correctIndex < 0) correctIndex = xFuture > 0 ? 3 : 2;
+      els.predictionOptions.innerHTML = '';
+      options.forEach((o, idx) => {
+        const b = document.createElement('button');
+        b.className = 'option-btn';
+        b.textContent = o.label;
+        b.onclick = () => {
+          document.querySelectorAll('.option-btn').forEach((btn, i) => {
+            btn.classList.toggle('correct', i === correctIndex);
+            btn.classList.toggle('wrong', i === idx && i !== correctIndex);
+          });
+          els.predictionQuestion.textContent = `Kết quả: x sau ${delta.toFixed(2)} s ≈ ${(xFuture*100).toFixed(1)} cm.`;
+        };
+        els.predictionOptions.appendChild(b);
+      });
+    }
+
+    function makeProblem() {
+      const A = amp() * 100;
+      const T = period();
+      const w = omega();
+      const ph = phi();
+      const vmax = w * amp() * 100;
+      const amax = w*w*amp() * 100;
+      els.problemOutput.textContent =
+`BÀI TẬP TỪ MÔ PHỎNG
+Một vật dao động điều hòa có đồ thị thu được từ mô phỏng. Tại thời điểm ban đầu, vật có:
+- x₀ = ${(x*100).toFixed(1)} cm
+- v₀ = ${(v*100).toFixed(1)} cm/s
+- m = ${m.toFixed(2)} kg
+- k = ${k.toFixed(0)} N/m
+
+Yêu cầu:
+1) Xác định chu kì T.
+2) Xác định tần số góc ω.
+3) Xác định biên độ A.
+4) Xác định pha ban đầu φ trong phương trình x = A cos(ωt + φ).
+5) Tính vmax và amax.
+
+Đáp án GV:
+A ≈ ${A.toFixed(1)} cm
+T ≈ ${T.toFixed(2)} s
+ω ≈ ${w.toFixed(2)} rad/s
+φ ≈ ${ph.toFixed(2)} rad
+vmax ≈ ${vmax.toFixed(1)} cm/s
+amax ≈ ${amax.toFixed(1)} cm/s²`;
+    }
+
+    document.querySelectorAll('.mode-btn').forEach(btn => btn.addEventListener('click', () => setMode(btn.dataset.mode)));
+    [els.mSlider, els.kSlider, els.speedSlider, els.dampingSlider].forEach(el => el && el.addEventListener('input', syncParams));
+    [els.showX, els.showV, els.showA].forEach(el => el.addEventListener('change', drawAll));
+    els.playBtn.addEventListener('click', () => { running = true; });
+    els.pauseBtn.addEventListener('click', () => { running = false; });
+    els.resetBtn.addEventListener('click', reset);
+    els.measureBtn.addEventListener('click', () => {
+      measuring = !measuring;
+      els.measureBtn.textContent = measuring ? 'Đang đo chu kì' : 'Bật đo chu kì';
+      els.measureBtn.classList.toggle('green', measuring);
+    });
+    els.clearMeasureBtn.addEventListener('click', () => { measurePoints = []; els.measureBox.textContent = 'Đo chu kì: chưa có dữ liệu'; drawAll(); });
+    els.hideAnswerBtn.addEventListener('click', () => {
+      els.statsCard.classList.toggle('hidden-answer');
+      els.hideAnswerBtn.textContent = els.statsCard.classList.contains('hidden-answer') ? 'Hiện đáp án' : 'Ẩn đáp án';
+    });
+    els.makePredictionBtn.addEventListener('click', makePrediction);
+    els.makeProblemBtn.addEventListener('click', makeProblem);
+
+    springCanvas.addEventListener('mousedown', startDrag);
+    springCanvas.addEventListener('mousemove', moveDrag);
+    window.addEventListener('mouseup', endDrag);
+    springCanvas.addEventListener('touchstart', startDrag, { passive: false });
+    springCanvas.addEventListener('touchmove', moveDrag, { passive: false });
+    springCanvas.addEventListener('touchend', endDrag, { passive: false });
+    graphCanvas.addEventListener('click', graphClick);
+    graphCanvas.addEventListener('touchend', (ev) => { if (ev.changedTouches.length) graphClick(ev.changedTouches[0]); }, { passive: true });
+
+    window.addEventListener('resize', resizeAll);
+    syncParams();
+    history = [{ t, x, v, a: currentAcc() }];
+    resizeAll();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
