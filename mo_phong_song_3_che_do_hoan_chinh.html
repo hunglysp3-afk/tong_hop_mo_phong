@@ -1,0 +1,283 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Mô phỏng sóng cơ: sóng ngang và sóng dọc</title>
+<style>
+:root{
+  --blue:#0b4f9c;--blue2:#073a73;--bg:#eef4ff;--text:#102033;--card:#fff;
+  --soft:#fff7d6;--green:#16a34a;--red:#dc2626;--orange:#f59e0b;--gray:#64748b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+header{text-align:center;padding:10px 8px;background:var(--blue);color:#fff}
+header h2{margin:0;font-size:clamp(18px,4vw,28px);line-height:1.25}
+.container{max-width:1180px;margin:auto;padding:10px}
+.canvas-wrap{background:#fff;border:2px solid var(--blue);border-radius:14px;overflow:hidden;box-shadow:0 2px 10px #0002}
+canvas{display:block;width:100%;height:450px;background:#fff;touch-action:none}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:10px}
+.box{background:var(--card);border-radius:12px;padding:10px;box-shadow:0 2px 8px #0002}
+label{display:block;margin-top:8px;font-weight:bold;font-size:15px}
+input,select,button{width:100%;padding:8px;margin-top:5px;font-size:16px;border-radius:8px;border:1px solid #b7c7dc}
+input[type=range]{padding:0;height:34px;accent-color:var(--blue)}
+button{background:var(--blue);color:#fff;border:none;cursor:pointer;min-height:42px;font-weight:bold}
+button.secondary{background:#475569}
+button:active{background:var(--blue2);transform:scale(.99)}
+.two-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.formula,.exercise{background:var(--soft);padding:10px;border-radius:12px;margin-top:10px;font-size:16px;line-height:1.55;overflow-x:auto}
+.value{float:right;color:var(--blue);font-weight:bold}
+.small-note{font-size:14px;color:#40536b;line-height:1.45}
+.hidden{display:none}
+.badge{display:inline-block;padding:3px 7px;border-radius:99px;background:#e0ecff;color:#0b4f9c;font-weight:bold;font-size:13px}
+@media(max-width:700px){
+  .container{padding:6px}
+  canvas{height:58vh;min-height:340px;max-height:560px}
+  .controls{grid-template-columns:1fr}
+  .formula,.exercise{font-size:15px}
+  label{font-size:14px}
+}
+@media(max-width:430px){canvas{height:54vh;min-height:320px}.two-buttons{grid-template-columns:1fr}}
+@media(orientation:landscape) and (max-height:520px){
+  header{display:none}.container{max-width:100%;padding:4px}canvas{height:62vh}
+  .controls{grid-template-columns:repeat(3,1fr)}.formula,.exercise{font-size:14px;padding:7px}
+}
+</style>
+</head>
+<body>
+<header><h2>Mô phỏng sóng ngang, sóng dọc và độ lệch pha</h2></header>
+<div class="container">
+  <div class="canvas-wrap"><canvas id="canvas"></canvas></div>
+
+  <div class="controls">
+    <div class="box">
+      <span class="badge">Chế độ</span>
+      <label>Mức hiển thị</label>
+      <select id="level">
+        <option value="basic">Cơ bản</option>
+        <option value="medium">Trung bình</option>
+        <option value="advanced">Nâng cao</option>
+      </select>
+
+      <label>Loại sóng</label>
+      <select id="waveType">
+        <option value="transverse">Sóng ngang</option>
+        <option value="longitudinal">Sóng dọc</option>
+      </select>
+
+      <label>Số phân tử <span class="value" id="particleVal"></span></label>
+      <input type="range" id="particles" min="20" max="50" value="30">
+
+      <label>Biên độ A <span class="value" id="AVal"></span></label>
+      <input type="range" id="A" min="10" max="85" value="45">
+    </div>
+
+    <div class="box">
+      <span class="badge">Thông số sóng</span>
+      <label>Bước sóng λ <span class="value" id="lambdaVal"></span></label>
+      <input type="range" id="lambda" min="120" max="560" value="280">
+
+      <label>Tần số f <span class="value" id="freqVal"></span></label>
+      <input type="range" id="freq" min="0.2" max="2.5" step="0.1" value="0.8">
+
+      <label>Điểm M <span class="value" id="x1Val"></span></label>
+      <input type="range" id="x1" min="0" max="1000" value="300">
+
+      <label>Điểm N <span class="value" id="x2Val"></span></label>
+      <input type="range" id="x2" min="0" max="1000" value="600">
+    </div>
+
+    <div class="box">
+      <span class="badge">Điều khiển</span>
+      <div class="two-buttons">
+        <button onclick="togglePause()">Dừng / Chạy</button>
+        <button onclick="resetTime()">Đặt lại</button>
+      </div>
+      <div class="two-buttons">
+        <button class="secondary" onclick="stepFrame()">Từng khung</button>
+        <button class="secondary" onclick="toggleSlow()">Chậm</button>
+      </div>
+      <button style="margin-top:8px" onclick="toggleFullscreen()">Toàn màn hình</button>
+      <label id="trackLabel">Hạt theo dõi <span class="value" id="trackVal"></span></label>
+      <input type="range" id="trackParticle" min="1" max="50" value="10">
+      <p class="small-note">Ở mức trung bình/nâng cao: có quỹ đạo hạt, đồ thị u(x), u(t), vòng tròn pha.</p>
+    </div>
+
+    <div class="box">
+      <span class="badge">Độ lệch pha</span>
+      <p id="phaseInfo"></p>
+      <p class="small-note">Kéo M và N để thay đổi vị trí. Hai điểm cách nhau λ thì cùng pha; cách nhau λ/2 thì ngược pha.</p>
+    </div>
+  </div>
+
+  <div class="formula" id="formula"></div>
+  <div class="exercise hidden" id="exerciseBox"></div>
+</div>
+
+<script>
+const canvas=document.getElementById("canvas"),ctx=canvas.getContext("2d");
+function resizeCanvas(){
+  const ratio=window.devicePixelRatio||1,rect=canvas.getBoundingClientRect();
+  canvas.width=rect.width*ratio;canvas.height=rect.height*ratio;ctx.setTransform(ratio,0,0,ratio,0,0);
+}
+addEventListener("resize",resizeCanvas);addEventListener("orientationchange",()=>setTimeout(resizeCanvas,250));resizeCanvas();
+
+const $=id=>document.getElementById(id);
+const level=$("level"),waveType=$("waveType"),AInput=$("A"),lambdaInput=$("lambda"),freqInput=$("freq"),
+x1Input=$("x1"),x2Input=$("x2"),particlesInput=$("particles"),trackInput=$("trackParticle");
+const phaseInfo=$("phaseInfo"),formula=$("formula"),exerciseBox=$("exerciseBox");
+let t=0,paused=false,slow=false,trackHistory=[];
+
+function togglePause(){paused=!paused}
+function resetTime(){t=0;trackHistory=[]}
+function toggleSlow(){slow=!slow}
+function stepFrame(){paused=true;t+=0.055; if(trackHistory.length>0) trackHistory.shift()}
+function toggleFullscreen(){const el=document.documentElement;if(!document.fullscreenElement){el.requestFullscreen&&el.requestFullscreen()}else{document.exitFullscreen&&document.exitFullscreen()}}
+
+function drawArrow(x1,y1,x2,y2,color,lw=2){
+  ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=lw;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  const a=Math.atan2(y2-y1,x2-x1),s=10;ctx.beginPath();ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-s*Math.cos(a-Math.PI/6),y2-s*Math.sin(a-Math.PI/6));
+  ctx.lineTo(x2-s*Math.cos(a+Math.PI/6),y2-s*Math.sin(a+Math.PI/6));ctx.closePath();ctx.fill();
+}
+function u(x,A,k,w,t){return A*Math.sin(k*x-w*t)}
+function drawZigzag(x1,y1,x2,y2,amp,turns,color){
+  ctx.strokeStyle=color;ctx.lineWidth=1.7;ctx.beginPath();
+  const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy);
+  if(len<2){ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();return}
+  const ux=dx/len,uy=dy/len,px=-uy,py=ux,steps=turns*2;ctx.moveTo(x1,y1);
+  for(let i=1;i<steps;i++){const s=i/steps,sign=i%2? -1:1;ctx.lineTo(x1+dx*s+px*amp*sign,y1+dy*s+py*amp*sign)}
+  ctx.lineTo(x2,y2);ctx.stroke();
+}
+function particlePositions(W,H,A,k,w,n,type){
+  const mid=H/2, arr=[];
+  for(let i=0;i<n;i++){
+    const x0=38+i*(W-76)/(n-1), disp=u(x0,A,k,w,t);
+    arr.push({x0, y0:mid, x:type==="longitudinal"?x0+disp:x0, y:type==="transverse"?mid+disp:mid, disp});
+  }
+  return arr;
+}
+function drawBase(W,H){
+  const mid=H/2;drawArrow(24,mid,W-24,mid,"#333");
+  ctx.fillStyle="#333";ctx.font=W<520?"13px Arial":"15px Arial";ctx.fillText("Chiều truyền sóng",Math.max(20,W-155),mid-14);
+}
+function drawTransverse(W,H,A,k,w,n){
+  const mid=H/2;drawBase(W,H);
+  ctx.strokeStyle="#0b4f9c";ctx.lineWidth=3;ctx.beginPath();
+  for(let x=0;x<W;x++){const y=mid+u(x,A,k,w,t);if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
+  const ps=particlePositions(W,H,A,k,w,n,"transverse"),r=W<520?5.5:7;
+  ps.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fillStyle="#f59e0b";ctx.fill();ctx.strokeStyle="#8a4b00";ctx.stroke();
+    ctx.beginPath();ctx.arc(p.x0,p.y0,2,0,Math.PI*2);ctx.fillStyle="#888";ctx.fill();drawArrow(p.x0,p.y0,p.x,p.y,"#e11d48",1.4);
+  });
+  return ps;
+}
+function drawLongitudinal(W,H,A,k,w,n){
+  const mid=H/2;drawBase(W,H);
+  ctx.fillStyle="#0b4f9c";ctx.font=W<520?"13px Arial":"15px Arial";ctx.fillText("Sóng dọc: hạt dao động theo phương truyền sóng",14,26);
+  const ps=particlePositions(W,H,A,k,w,n,"longitudinal"),r=W<520?5.2:6.4,rest=(W-76)/(n-1);
+  ctx.strokeStyle="#cbd5e1";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(30,mid);ctx.lineTo(W-30,mid);ctx.stroke();
+  for(let i=0;i<n-1;i++){
+    const gap=Math.abs(ps[i+1].x-ps[i].x),compression=rest-gap;let color="#64748b";
+    if(compression>rest*.18) color="#dc2626"; if(compression<-rest*.18) color="#2563eb";
+    drawZigzag(ps[i].x+r,mid,ps[i+1].x-r,mid,4,5,color);
+  }
+  ps.forEach((p,i)=>{ctx.beginPath();ctx.arc(p.x0,mid,2,0,Math.PI*2);ctx.fillStyle="#94a3b8";ctx.fill();
+    ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fillStyle="#f59e0b";ctx.fill();ctx.strokeStyle="#8a4b00";ctx.stroke();
+    if(i%3===0||W>650)drawArrow(p.x0,mid+25,p.x,mid+25,"#e11d48",1.3);
+  });
+  ctx.font=W<520?"12px Arial":"14px Arial";ctx.fillStyle="#dc2626";ctx.fillText("Đỏ: nén",14,H-30);ctx.fillStyle="#2563eb";ctx.fillText("Xanh: dãn",88,H-30);
+  return ps;
+}
+function drawPointMarker(x0,name,color,A,k,w,type,W,H){
+  const mid=H/2,disp=u(x0,A,k,w,t);let x=x0,y=mid;if(type==="transverse")y=mid+disp;else x=x0+disp;
+  ctx.setLineDash([5,5]);ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x0,34);ctx.lineTo(x0,H-36);ctx.stroke();ctx.setLineDash([]);
+  ctx.beginPath();ctx.arc(x,y,W<520?9:11,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
+  ctx.fillStyle=color;ctx.font=W<520?"bold 15px Arial":"bold 18px Arial";ctx.fillText(name,x+10,y-10);
+  if(type==="transverse")drawArrow(x0,mid,x0,y,color,2);else drawArrow(x0,mid-28,x,mid-28,color,2);
+}
+function drawMediumPanels(W,H,A,k,w,lambda,f,type,ps){
+  const mode=level.value;if(mode==="basic")return;
+  const top=8, panelW=Math.min(280,W*.38), panelH=120, x=W-panelW-10;
+  ctx.fillStyle="rgba(255,255,255,.88)";ctx.strokeStyle="#94a3b8";ctx.lineWidth=1;
+  ctx.fillRect(x,top,panelW,panelH);ctx.strokeRect(x,top,panelW,panelH);
+  ctx.fillRect(x,H-panelH-8,panelW,panelH);ctx.strokeRect(x,H-panelH-8,panelW,panelH);
+
+  // u(x)
+  ctx.fillStyle="#102033";ctx.font="13px Arial";ctx.fillText("Đồ thị u(x) tại thời điểm đang xét",x+8,top+16);
+  const ox=x+25, oy=top+panelH/2+10, gw=panelW-40, gh=panelH-45;
+  ctx.strokeStyle="#cbd5e1";ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(ox+gw,oy);ctx.stroke();
+  ctx.strokeStyle="#0b4f9c";ctx.beginPath();
+  for(let i=0;i<=gw;i++){const xx=i/gw*W, yy=oy-u(xx,A*.55,k,w,t); if(i===0)ctx.moveTo(ox+i,yy); else ctx.lineTo(ox+i,yy)}ctx.stroke();
+
+  // u(t) của hạt đang theo dõi
+  const idx=Math.min(Number(trackInput.value)-1,ps.length-1), p=ps[idx];
+  trackHistory.push({time:t, disp:p.disp}); if(trackHistory.length>160)trackHistory.shift();
+  const bx=x+25, by=H-panelH-8+panelH/2+15, bw=panelW-40;
+  ctx.fillStyle="#102033";ctx.fillText("Đồ thị u(t) của hạt theo dõi",x+8,H-panelH+8);
+  ctx.strokeStyle="#cbd5e1";ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx+bw,by);ctx.stroke();
+  ctx.strokeStyle="#16a34a";ctx.beginPath();
+  trackHistory.forEach((q,i)=>{const xx=bx+i/159*bw, yy=by-q.disp*.55; if(i===0)ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy)});ctx.stroke();
+
+  // quỹ đạo hạt
+  if(p){
+    ctx.strokeStyle="#16a34a";ctx.setLineDash([3,3]);ctx.beginPath();
+    if(type==="transverse"){ctx.moveTo(p.x0,p.y0-A);ctx.lineTo(p.x0,p.y0+A)}
+    else{ctx.moveTo(p.x0-A,p.y0);ctx.lineTo(p.x0+A,p.y0)}
+    ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle="#16a34a";ctx.font="bold 13px Arial";ctx.fillText("Hạt theo dõi",Math.min(p.x+8,W-90),p.y-18);
+  }
+
+  // vòng tròn pha
+  const cx=72, cy=72, R=42, phase=k*(p?p.x0:0)-w*t;
+  ctx.fillStyle="rgba(255,255,255,.88)";ctx.strokeStyle="#94a3b8";ctx.fillRect(10,10,125,125);ctx.strokeRect(10,10,125,125);
+  ctx.fillStyle="#102033";ctx.font="13px Arial";ctx.fillText("Vòng tròn pha",20,28);
+  ctx.strokeStyle="#0b4f9c";ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.stroke();
+  const px=cx+R*Math.cos(phase), py=cy+R*Math.sin(phase);
+  drawArrow(cx,cy,px,py,"#e11d48",2);
+  ctx.fillStyle="#102033";ctx.fillText("φ",px+4,py-4);
+}
+function updatePanel(A,lambda,f,x1,x2,W,n){
+  $("AVal").textContent=Math.round(A)+" px";$("lambdaVal").textContent=Math.round(lambda)+" px";$("freqVal").textContent=f.toFixed(1)+" Hz";
+  $("x1Val").textContent=(x1/W).toFixed(2)+"L";$("x2Val").textContent=(x2/W).toFixed(2)+"L";$("particleVal").textContent=n+" hạt";
+  trackInput.max=n;$("trackVal").textContent=Math.min(Number(trackInput.value),n);
+}
+function updateExercise(lambda,f,dx,phi,deg,A){
+  if(level.value!=="advanced"){exerciseBox.classList.add("hidden");return}
+  exerciseBox.classList.remove("hidden");
+  const v=f*lambda, half=lambda/2, T=1/f, omega=2*Math.PI*f, k=2*Math.PI/lambda;
+  exerciseBox.innerHTML=`
+  <b>Chế độ nâng cao: câu hỏi luyện tập từ số liệu hiện tại</b><br>
+  <b>Câu 1.</b> Với λ = ${lambda.toFixed(0)} px và f = ${f.toFixed(1)} Hz, hãy tính vận tốc truyền sóng v. 
+  <br><i>Đáp án:</i> v = fλ = ${v.toFixed(1)} px/s.<br>
+  <b>Câu 2.</b> Hai điểm M, N cách nhau MN = ${dx.toFixed(1)} px. Tính độ lệch pha Δφ.
+  <br><i>Đáp án:</i> Δφ = 2πMN/λ = ${phi.toFixed(2)} rad ≈ ${deg.toFixed(1)}°.<br>
+  <b>Câu 3.</b> Hai điểm cách nhau bao nhiêu thì ngược pha?
+  <br><i>Đáp án:</i> Δx = λ/2 = ${half.toFixed(1)} px.<br>
+  <b>Câu 4.</b> Tính chu kì T, tần số góc ω và số sóng k.
+  <br><i>Đáp án:</i> T = ${T.toFixed(2)} s; ω = ${omega.toFixed(2)} rad/s; k = ${k.toFixed(4)} rad/px.<br>
+  <b>Câu 5.</b> Khi tăng A, đại lượng nào thay đổi: vận tốc truyền sóng, bước sóng, tần số hay li độ cực đại?
+  <br><i>Đáp án:</i> Chỉ li độ cực đại thay đổi; v, λ, f không đổi nếu không chỉnh các thông số đó.`;
+}
+function draw(){
+  const W=canvas.clientWidth,H=canvas.clientHeight;ctx.clearRect(0,0,W,H);
+  let A=Number(AInput.value),lambda=Number(lambdaInput.value),f=Number(freqInput.value),n=Number(particlesInput.value);
+  if(W<500)A=Math.min(A,H*.16); if(lambda>W*.95)lambda=W*.95;
+  const w=2*Math.PI*f,k=2*Math.PI/lambda,type=waveType.value,x1=Number(x1Input.value)/1000*W,x2=Number(x2Input.value)/1000*W;
+  updatePanel(A,lambda,f,x1,x2,W,n);
+  const ps=type==="transverse"?drawTransverse(W,H,A,k,w,n):drawLongitudinal(W,H,A,k,w,n);
+  drawPointMarker(x1,"M","#16a34a",A,k,w,type,W,H); drawPointMarker(x2,"N","#dc2626",A,k,w,type,W,H);
+  drawMediumPanels(W,H,A,k,w,lambda,f,type,ps);
+  const dx=Math.abs(x2-x1),phi=2*Math.PI*dx/lambda,red=phi%(2*Math.PI),deg=red*180/Math.PI;
+  phaseInfo.innerHTML=`MN = ${dx.toFixed(1)} px<br>Δφ = 2πMN/λ = ${phi.toFixed(2)} rad<br>Δφ rút gọn = ${red.toFixed(2)} rad<br>Tương đương ${deg.toFixed(1)}°`;
+  formula.innerHTML= type==="transverse" ?
+  `Phương trình sóng ngang: <b>u(x,t)=Acos(ωt-kx)</b>. Hạt môi trường dao động <b>vuông góc</b> với phương truyền sóng. Độ lệch pha: <b>Δφ=2πΔx/λ</b>.` :
+  `Phương trình li độ của sóng dọc: <b>u(x,t)=Acos(ωt-kx)</b>. Hạt môi trường dao động <b>cùng phương</b> với phương truyền sóng; vùng nén và dãn lan truyền theo thời gian. Độ lệch pha: <b>Δφ=2πΔx/λ</b>.`;
+  updateExercise(lambda,f,dx,phi,deg,A);
+  if(!paused)t+=slow?0.006:0.018;
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
