@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Ultra Lab - Tán xạ hạt alpha Rutherford</title>
+<style>
+:root{
+  --bg:#08111f;
+  --panel:#0f1b2d;
+  --panel2:#111827;
+  --line:#334155;
+  --text:#f8fafc;
+  --muted:#cbd5e1;
+  --yellow:#facc15;
+  --blue:#38bdf8;
+  --red:#fb7185;
+  --green:#4ade80;
+  --orange:#fb923c;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial, Helvetica, sans-serif;
+  background:linear-gradient(180deg,#08111f,#0f172a);
+  color:var(--text);
+  overscroll-behavior:none;
+}
+header{
+  text-align:center;
+  padding:10px 8px;
+  background:#0b1220;
+  border-bottom:1px solid var(--line);
+}
+header h1{
+  margin:0;
+  font-size:20px;
+  color:var(--yellow);
+}
+header p{
+  margin:4px 0 0;
+  color:var(--muted);
+  font-size:13px;
+}
+.main{
+  max-width:1180px;
+  margin:0 auto;
+  padding:8px;
+}
+.lab{
+  background:rgba(15,27,45,.92);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:8px;
+}
+.canvas-wrap{
+  position:relative;
+}
+canvas{
+  width:100%;
+  height:560px;
+  display:block;
+  border-radius:12px;
+  background:radial-gradient(circle at 60% 50%,#172554,#020617 70%);
+  border:1px solid #1e293b;
+  touch-action:none;
+}
+.overlay-tip{
+  position:absolute;
+  left:10px;
+  bottom:10px;
+  color:#e5e7eb;
+  background:rgba(2,6,23,.72);
+  border:1px solid rgba(148,163,184,.25);
+  border-radius:10px;
+  padding:7px 9px;
+  font-size:12px;
+  line-height:1.35;
+  max-width:460px;
+}
+.control-bar{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:7px;
+  margin-top:8px;
+}
+button,select,input{
+  width:100%;
+  border:none;
+  border-radius:10px;
+  padding:10px 8px;
+  font-size:14px;
+}
+button{
+  cursor:pointer;
+  font-weight:700;
+  color:#07111f;
+  background:var(--yellow);
+}
+button.blue{background:var(--blue)}
+button.red{background:var(--red); color:#fff}
+button.green{background:var(--green)}
+button.dark{
+  background:#1e293b;
+  color:#f8fafc;
+  border:1px solid #475569;
+}
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:8px;
+}
+.card{
+  background:rgba(15,23,42,.92);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px;
+}
+.card h2{
+  margin:0 0 8px;
+  font-size:16px;
+  color:var(--yellow);
+}
+.row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin:6px 0;
+}
+label{
+  display:block;
+  color:var(--muted);
+  font-size:13px;
+  margin:5px 0 3px;
+}
+.note,.stat,.quiz{
+  color:#dbeafe;
+  font-size:13.5px;
+  line-height:1.55;
+}
+.stat b{color:#fff}
+.box{
+  background:#020617;
+  border-left:4px solid var(--yellow);
+  border-radius:9px;
+  padding:9px;
+  color:#e5e7eb;
+  line-height:1.55;
+  font-size:13.5px;
+}
+.small{
+  font-size:12px;
+  color:#94a3b8;
+}
+.checks{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:6px;
+  margin-top:6px;
+}
+.checks label{
+  background:#020617;
+  padding:8px;
+  border-radius:8px;
+  border:1px solid #1e293b;
+  margin:0;
+}
+.checks input{
+  width:auto;
+  vertical-align:middle;
+  margin-right:5px;
+}
+.hist{
+  display:grid;
+  grid-template-columns:80px 1fr 46px;
+  gap:6px;
+  align-items:center;
+  font-size:13px;
+  margin:5px 0;
+}
+.bar{
+  height:12px;
+  background:#1e293b;
+  border-radius:99px;
+  overflow:hidden;
+}
+.fill{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,#38bdf8,#facc15);
+}
+.quiz button{
+  margin:4px 0;
+  text-align:left;
+  background:#1e293b;
+  color:#f8fafc;
+  border:1px solid #475569;
+  font-weight:500;
+}
+.quiz .good{border-color:#22c55e;background:#064e3b}
+.quiz .bad{border-color:#ef4444;background:#7f1d1d}
+@media(max-width:760px){
+  header h1{font-size:16px}
+  header p{font-size:12px}
+  .main{padding:5px}
+  .lab{padding:5px}
+  canvas{height:410px}
+  .control-bar{
+    grid-template-columns:repeat(4,1fr);
+    gap:5px;
+  }
+  button,select,input{
+    padding:9px 5px;
+    font-size:12.5px;
+  }
+  .grid{grid-template-columns:1fr}
+  .row{grid-template-columns:1fr 1fr}
+  .checks{grid-template-columns:1fr 1fr}
+  .overlay-tip{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Ultra Lab: Tán xạ hạt α qua lá vàng mỏng Rutherford</h1>
+  <p>Quan sát hiện tượng → thu số liệu → rút ra kết luận về cấu tạo nguyên tử</p>
+</header>
+
+<div class="main">
+  <div class="lab">
+    <div class="canvas-wrap">
+      <canvas id="cv"></canvas>
+      <div class="overlay-tip">
+        Gợi ý: bắn từng hạt để quan sát quỹ đạo, sau đó bắn 100–500 hạt để thấy quy luật thống kê.
+      </div>
+    </div>
+
+    <div class="control-bar">
+      <button onclick="shootSelected()">Bắn</button>
+      <button class="blue" onclick="shootOne()">1 hạt</button>
+      <button class="red" onclick="togglePause()" id="pauseBtn">Dừng</button>
+      <button class="green" onclick="resetSim()">Làm lại</button>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Bảng nhập số liệu</h2>
+        <div class="row">
+          <div>
+            <label>Số hạt/lần</label>
+            <select id="num">
+              <option value="10">10</option>
+              <option value="30" selected>30</option>
+              <option value="100">100</option>
+              <option value="300">300</option>
+            </select>
+          </div>
+          <div>
+            <label>Tốc độ</label>
+            <select id="speed">
+              <option value="0.35">0,35×</option>
+              <option value="0.7">0,7×</option>
+              <option value="1" selected>1×</option>
+              <option value="1.8">1,8×</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Độ dày lá vàng</label>
+            <select id="thick">
+              <option value="1" selected>Mỏng</option>
+              <option value="2">Trung bình</option>
+              <option value="3">Dày</option>
+            </select>
+          </div>
+          <div>
+            <label>Năng lượng hạt α</label>
+            <select id="energy">
+              <option value="0.8">Thấp</option>
+              <option value="1" selected>Vừa</option>
+              <option value="1.25">Cao</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="checks">
+          <label><input type="checkbox" id="showAtoms" checked>Hiện nguyên tử</label>
+          <label><input type="checkbox" id="showNuclei" checked>Hiện hạt nhân</label>
+          <label><input type="checkbox" id="showForce" checked>Vùng lực</label>
+          <label><input type="checkbox" id="showZoom" checked>Cửa sổ zoom</label>
+          <label><input type="checkbox" id="showAngle" checked>Góc tán xạ</label>
+          <label><input type="checkbox" id="continuous">Bắn liên tục</label>
+        </div>
+
+        <p class="small">
+          Mô hình định tính: vị trí ban đầu và vị trí hạt nhân là ngẫu nhiên; sau đó hạt α chuyển động theo lực đẩy Coulomb đã được chuẩn hóa. Bản này ưu tiên đúng kết luận Rutherford: đa số hạt gần như đi thẳng, chỉ rất ít hạt lệch mạnh hoặc bật ngược.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>Thống kê thí nghiệm</h2>
+        <div class="stat">
+          Tổng số hạt: <b id="total">0</b><br>
+          Đi gần như thẳng: <b id="straight">0</b> — <b id="straightP">0%</b><br>
+          Lệch nhẹ: <b id="small">0</b> — <b id="smallP">0%</b><br>
+          Lệch mạnh: <b id="large">0</b> — <b id="largeP">0%</b><br>
+          Bật ngược: <b id="back">0</b> — <b id="backP">0%</b>
+        </div>
+
+        <h2 style="margin-top:10px">Phân bố góc tán xạ</h2>
+        <div class="hist"><span>0°–5°</span><div class="bar"><div class="fill" id="h0"></div></div><span id="h0t">0</span></div>
+        <div class="hist"><span>5°–20°</span><div class="bar"><div class="fill" id="h1"></div></div><span id="h1t">0</span></div>
+        <div class="hist"><span>20°–90°</span><div class="bar"><div class="fill" id="h2"></div></div><span id="h2t">0</span></div>
+        <div class="hist"><span>>90°</span><div class="bar"><div class="fill" id="h3"></div></div><span id="h3t">0</span></div>
+      </div>
+
+      <div class="card">
+        <h2>Kết luận tự động</h2>
+        <div class="box" id="conclusion">
+          Hãy bắn nhiều hạt α. Khi số liệu đủ lớn, mô phỏng sẽ giúp học sinh rút ra kết luận.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Luyện tập nhanh</h2>
+        <div class="quiz" id="quiz">
+          <b>Câu hỏi:</b> Vì sao phần lớn hạt α đi thẳng qua lá vàng?<br>
+          <button onclick="answer(this,false)">Vì hạt α không mang điện.</button>
+          <button onclick="answer(this,true)">Vì phần lớn thể tích nguyên tử là khoảng trống.</button>
+          <button onclick="answer(this,false)">Vì lá vàng không có nguyên tử.</button>
+          <button onclick="answer(this,false)">Vì hạt nhân vàng mang điện âm.</button>
+          <div id="feedback" class="small"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById("cv");
+const ctx = canvas.getContext("2d");
+
+let W=0,H=0;
+let particles=[];
+let trails=[];
+let atoms=[];
+let paused=false;
+let continuousTimer=null;
+
+let stats={
+  total:0, straight:0, small:0, large:0, back:0,
+  hist:[0,0,0,0]
+};
+
+function resize(){
+  canvas.width = Math.max(320, Math.floor(canvas.clientWidth * devicePixelRatio));
+  canvas.height = Math.max(300, Math.floor(canvas.clientHeight * devicePixelRatio));
+  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  W=canvas.clientWidth;
+  H=canvas.clientHeight;
+  createAtoms();
+}
+window.addEventListener("resize", resize);
+
+function fx(){ return W*0.50; }
+
+function rand(a,b){ return a+Math.random()*(b-a); }
+
+function createAtoms(){
+  atoms=[];
+  const thick=Number(document.getElementById("thick")?.value || 1);
+  const count=5+thick*4;
+  for(let i=0;i<count;i++){
+    atoms.push({
+      x:fx()+rand(-8,8),
+      y:rand(H*0.16,H*0.86),
+      r:rand(17,24)
+    });
+  }
+}
+document.addEventListener("DOMContentLoaded", ()=>{
+  resize();
+  ["thick","energy"].forEach(id=>{
+    document.getElementById(id).addEventListener("change", createAtoms);
+  });
+  document.getElementById("continuous").addEventListener("change", e=>{
+    if(e.target.checked){
+      continuousTimer=setInterval(()=>{ if(!paused) shootOne(); },160);
+    }else{
+      clearInterval(continuousTimer);
+      continuousTimer=null;
+    }
+  });
+  updateText();
+  requestAnimationFrame(draw);
+});
+
+function newParticle(yForced=null){
+  const y = yForced ?? rand(H*0.18,H*0.84);
+  const energy=Number(document.getElementById("energy").value);
+  return{
+    x:24,
+    y:y,
+    vx:4.2*energy,
+    vy:0,
+    startY:y,
+    path:[{x:24,y:y}],
+    active:true,
+    angle:0,
+    minR:9999,
+    nearAtom:null
+  };
+}
+
+function shootOne(){
+  if(paused) togglePause();
+  particles.push(newParticle());
+  stats.total++;
+  updateText();
+}
+
+function shootSelected(){
+  if(paused) togglePause();
+  const n=Number(document.getElementById("num").value);
+  for(let i=0;i<n;i++){
+    setTimeout(()=>shootOne(), i*24);
+  }
+}
+
+function togglePause(){
+  paused=!paused;
+  document.getElementById("pauseBtn").innerText=paused?"Tiếp tục":"Dừng";
+}
+
+function resetSim(){
+  particles=[];
+  trails=[];
+  stats={total:0, straight:0, small:0, large:0, back:0, hist:[0,0,0,0]};
+  createAtoms();
+  updateText();
+}
+
+function updateParticle(p){
+  const speed=Number(document.getElementById("speed").value);
+  const energy=Number(document.getElementById("energy").value);
+
+  for(const a of atoms){
+    const dx=p.x-a.x, dy=p.y-a.y;
+    const r2=dx*dx+dy*dy;
+    const r=Math.sqrt(r2);
+
+    if(r<p.minR){
+      p.minR=r;
+      p.nearAtom=a;
+    }
+
+    // Lực Coulomb chuẩn hóa: chỉ đáng kể khi đi rất gần hạt nhân.
+    if(r<24 && r>3.2){
+      const k = 14/(energy*energy);
+      const f = k/r2;
+      p.vx += (dx/r)*f;
+      p.vy += (dy/r)*f;
+    }
+
+    // Va rất gần hạt nhân: bật ngược hiếm.
+    if(r<3.4){
+      p.vx = -Math.abs(p.vx)*0.35;
+      p.vy += (dy>=0?1:-1)*rand(1.0,1.8);
+    }
+  }
+
+  p.x += p.vx*speed;
+  p.y += p.vy*speed;
+
+  if(Math.random()<0.65){
+    p.path.push({x:p.x,y:p.y});
+    if(p.path.length>360) p.path.shift();
+  }
+
+  if(p.x>W+40 || p.x<-50 || p.y<-60 || p.y>H+60){
+    classify(p);
+    p.active=false;
+    trails.push({path:p.path.slice(), angle:p.angle});
+    if(trails.length>350) trails.shift();
+  }
+}
+
+function classify(p){
+  const theta=Math.atan2(p.vy,p.vx)*180/Math.PI;
+  const absTheta=Math.abs(theta);
+  p.angle=theta;
+
+  if(p.x < fx() || absTheta>90){
+    stats.back++;
+    stats.hist[3]++;
+  }else if(absTheta>25){
+    stats.large++;
+    stats.hist[2]++;
+  }else if(absTheta>7){
+    stats.small++;
+    stats.hist[1]++;
+  }else{
+    stats.straight++;
+    stats.hist[0]++;
+  }
+  updateText();
+}
+
+function pct(x){
+  if(stats.total===0) return "0%";
+  return (100*x/stats.total).toFixed(1).replace(".0","")+"%";
+}
+
+function updateText(){
+  const ids=["total","straight","small","large","back"];
+  ids.forEach(id=>document.getElementById(id).innerText=stats[id]);
+  document.getElementById("straightP").innerText=pct(stats.straight);
+  document.getElementById("smallP").innerText=pct(stats.small);
+  document.getElementById("largeP").innerText=pct(stats.large);
+  document.getElementById("backP").innerText=pct(stats.back);
+
+  const max=Math.max(1,...stats.hist);
+  for(let i=0;i<4;i++){
+    document.getElementById("h"+i).style.width=(100*stats.hist[i]/max)+"%";
+    document.getElementById("h"+i+"t").innerText=stats.hist[i];
+  }
+
+  let c="";
+  if(stats.total<20){
+    c="Bắn thêm hạt để số liệu có ý nghĩa thống kê. Khi bắn từng hạt, hãy chú ý: hạt chỉ lệch rõ khi đi rất gần hạt nhân.";
+  }else{
+    c=`Dữ liệu hiện tại cho thấy ${pct(stats.straight)} hạt α đi gần như thẳng qua lá vàng. Điều đó chứng tỏ phần lớn thể tích nguyên tử là khoảng trống.<br>`;
+    if(stats.small+stats.large+stats.back>0){
+      c+=`Có ${pct(stats.small+stats.large+stats.back)} hạt bị lệch hướng, chứng tỏ trong nguyên tử có vùng mang điện dương đẩy hạt α.<br>`;
+    }
+    if(stats.back+stats.large>0){
+      c+=`Một tỉ lệ rất nhỏ lệch mạnh hoặc bật ngược. Đây là bằng chứng quan trọng cho thấy điện tích dương và gần như toàn bộ khối lượng nguyên tử tập trung trong một hạt nhân rất nhỏ.`;
+    }else{
+      c+=`Tiếp tục tăng số hạt, thỉnh thoảng sẽ xuất hiện hạt lệch mạnh hoặc bật ngược.`;
+    }
+  }
+  document.getElementById("conclusion").innerHTML=c;
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  drawBackground();
+  drawLab();
+  drawTrails();
+
+  for(const p of particles){
+    if(!paused) updateParticle(p);
+    drawParticle(p);
+  }
+  particles=particles.filter(p=>p.active);
+
+  if(document.getElementById("showZoom")?.checked) drawZoom();
+  requestAnimationFrame(draw);
+}
+
+function drawBackground(){
+  ctx.fillStyle="#020617";
+  ctx.fillRect(0,0,W,H);
+  const g=ctx.createRadialGradient(W*.62,H*.52,20,W*.62,H*.52,W*.7);
+  g.addColorStop(0,"rgba(30,64,175,.38)");
+  g.addColorStop(1,"rgba(2,6,23,0)");
+  ctx.fillStyle=g;
+  ctx.fillRect(0,0,W,H);
+}
+
+function drawLab(){
+  ctx.fillStyle="#e5e7eb";
+  ctx.font="14px Arial";
+  ctx.fillText("Nguồn α",18,26);
+  ctx.fillText("Lá vàng mỏng",fx()-48,26);
+  ctx.fillText("Màn huỳnh quang",Math.max(W-150, W*.72),26);
+
+  // source
+  ctx.fillStyle="#fb923c";
+  roundRect(18,H*.42,18,H*.16,5,true,false);
+  ctx.fillStyle="#fff";
+  ctx.font="15px Arial";
+  ctx.fillText("α",23,H*.51);
+
+  // foil
+  ctx.strokeStyle="#facc15";
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(fx(),H*.12);
+  ctx.lineTo(fx(),H*.88);
+  ctx.stroke();
+  ctx.fillStyle="rgba(250,204,21,.08)";
+  ctx.fillRect(fx()-7,H*.12,14,H*.76);
+
+  // detector
+  ctx.strokeStyle="#38bdf8";
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.arc(fx(),H/2,W*.42,-Math.PI/2.55,Math.PI/2.55);
+  ctx.stroke();
+
+  const showAtoms=document.getElementById("showAtoms")?.checked;
+  const showNuclei=document.getElementById("showNuclei")?.checked;
+  const showForce=document.getElementById("showForce")?.checked;
+
+  for(const a of atoms){
+    if(showAtoms){
+      ctx.strokeStyle="rgba(148,163,184,.18)";
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.arc(a.x,a.y,a.r,0,Math.PI*2);
+      ctx.stroke();
+
+      // electron gợi ý
+      ctx.fillStyle="rgba(125,211,252,.5)";
+      ctx.beginPath();
+      ctx.arc(a.x+a.r*Math.cos((Date.now()/650+a.y)*0.8),a.y+a.r*Math.sin((Date.now()/650+a.x)*0.8),1.5,0,Math.PI*2);
+      ctx.fill();
+    }
+
+    if(showForce){
+      const gr=ctx.createRadialGradient(a.x,a.y,1,a.x,a.y,35);
+      gr.addColorStop(0,"rgba(250,204,21,.18)");
+      gr.addColorStop(1,"rgba(250,204,21,0)");
+      ctx.fillStyle=gr;
+      ctx.beginPath();
+      ctx.arc(a.x,a.y,24,0,Math.PI*2);
+      ctx.fill();
+    }
+
+    if(showNuclei){
+      ctx.fillStyle="#fde047";
+      ctx.beginPath();
+      ctx.arc(a.x,a.y,3.2,0,Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle="#111827";
+      ctx.font="8px Arial";
+      ctx.fillText("+",a.x-2.5,a.y+3);
+    }
+  }
+}
+
+function drawTrails(){
+  for(const tr of trails){
+    const path=tr.path;
+    ctx.strokeStyle="rgba(248,113,113,.22)";
+    ctx.lineWidth=1.1;
+    ctx.beginPath();
+    path.forEach((q,i)=> i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));
+    ctx.stroke();
+
+    if(document.getElementById("showAngle")?.checked && Math.abs(tr.angle)>5){
+      const last=path[path.length-1];
+      ctx.fillStyle="rgba(255,255,255,.65)";
+      ctx.font="11px Arial";
+      ctx.fillText("θ≈"+Math.round(Math.abs(tr.angle))+"°", last.x-38, last.y-4);
+    }
+  }
+}
+
+function drawParticle(p){
+  ctx.strokeStyle="#fb7185";
+  ctx.lineWidth=1.5;
+  ctx.beginPath();
+  p.path.forEach((q,i)=> i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));
+  ctx.stroke();
+
+  ctx.fillStyle="#fb7185";
+  ctx.beginPath();
+  ctx.arc(p.x,p.y,4,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.fillStyle="#fff";
+  ctx.font="10px Arial";
+  ctx.fillText("α",p.x+5,p.y-5);
+}
+
+function drawZoom(){
+  const p=particles[particles.length-1];
+  if(!p || !p.nearAtom) return;
+
+  const zw=Math.min(250,W*.42), zh=130;
+  const zx=W-zw-10, zy=H-zh-10;
+  ctx.fillStyle="rgba(2,6,23,.86)";
+  roundRect(zx,zy,zw,zh,10,true,false);
+  ctx.strokeStyle="rgba(148,163,184,.4)";
+  ctx.strokeRect(zx,zy,zw,zh);
+
+  ctx.fillStyle="#facc15";
+  ctx.font="12px Arial";
+  ctx.fillText("Cửa sổ phóng đại gần hạt nhân",zx+10,zy+18);
+
+  const scale=4.2;
+  const cx=zx+zw*.5, cy=zy+zh*.58;
+  const a=p.nearAtom;
+
+  ctx.strokeStyle="rgba(148,163,184,.22)";
+  ctx.beginPath();
+  ctx.arc(cx,cy,24*scale/4,0,Math.PI*2);
+  ctx.stroke();
+
+  ctx.fillStyle="#fde047";
+  ctx.beginPath();
+  ctx.arc(cx,cy,5,0,Math.PI*2);
+  ctx.fill();
+
+  const px=cx+(p.x-a.x)*scale;
+  const py=cy+(p.y-a.y)*scale;
+  ctx.fillStyle="#fb7185";
+  ctx.beginPath();
+  ctx.arc(px,py,5,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.strokeStyle="#fb7185";
+  ctx.beginPath();
+  ctx.moveTo(px-18,py);
+  ctx.lineTo(px-3,py);
+  ctx.stroke();
+
+  ctx.fillStyle="#e5e7eb";
+  ctx.font="11px Arial";
+  ctx.fillText("r gần nhất ≈ "+Math.round(p.minR)+" px mô phỏng",zx+10,zy+zh-12);
+}
+
+function roundRect(x,y,w,h,r,fill,stroke){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  if(fill)ctx.fill();
+  if(stroke)ctx.stroke();
+}
+
+function answer(btn,ok){
+  [...document.querySelectorAll(".quiz button")].forEach(b=>b.classList.remove("good","bad"));
+  btn.classList.add(ok?"good":"bad");
+  document.getElementById("feedback").innerHTML = ok
+    ? "Đúng. Đây là kết luận quan trọng nhất: nguyên tử hầu như rỗng."
+    : "Chưa đúng. Hãy quan sát lại: đa số hạt đi qua vì chúng không gặp hạt nhân.";
+}
+</script>
+</body>
+</html>

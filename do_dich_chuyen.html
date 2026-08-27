@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Physics Lab Ultra - Độ dịch chuyển</title>
+<style>
+:root{
+  --bg1:#dbeafe;--bg2:#f5f3ff;--card:#ffffff;--ink:#0f172a;--muted:#64748b;
+  --blue:#2563eb;--red:#ef4444;--green:#16a34a;--orange:#f59e0b;--purple:#7c3aed;
+  --cyan:#06b6d4;--line:#dbeafe;--shadow:0 14px 35px rgba(15,23,42,.12);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--ink);
+  background:
+    radial-gradient(circle at top left,#bfdbfe 0,#eef2ff 36%,transparent 56%),
+    linear-gradient(135deg,#eff6ff,#f8fafc 45%,#f5f3ff);
+}
+.app{max-width:1280px;margin:auto;padding:10px}
+.hero{
+  border-radius:24px;padding:15px 18px;color:white;margin-bottom:10px;box-shadow:var(--shadow);
+  background:linear-gradient(135deg,#1d4ed8,#7c3aed 55%,#0f172a);
+  position:relative;overflow:hidden;
+}
+.hero:after{
+  content:"";position:absolute;inset:auto -80px -120px auto;width:280px;height:280px;border-radius:50%;
+  background:rgba(255,255,255,.14);
+}
+.hero h1{margin:0;text-align:center;font-size:24px;letter-spacing:.2px}
+.hero p{margin:5px 0 0;text-align:center;font-size:14px;opacity:.95}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.tab{
+  padding:11px 8px;border:0;border-radius:16px;background:white;box-shadow:0 8px 20px #00000012;
+  color:#1e293b;font-weight:900;cursor:pointer
+}
+.tab.active{background:linear-gradient(135deg,#2563eb,#7c3aed);color:white}
+.layout{display:grid;grid-template-columns:1.75fr .9fr;gap:10px;align-items:start}
+.card{
+  background:rgba(255,255,255,.92);backdrop-filter:blur(10px);
+  border:1px solid rgba(219,234,254,.9);border-radius:22px;padding:10px;box-shadow:var(--shadow)
+}
+.toolbar{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+button,select,input{
+  border:0;border-radius:14px;padding:9px 11px;font-weight:900;background:#e2e8f0;color:#0f172a;
+}
+button{cursor:pointer}
+button.primary{background:#2563eb;color:white} button.green{background:#16a34a;color:white}
+button.red{background:#ef4444;color:white} button.orange{background:#f59e0b;color:white}
+button.purple{background:#7c3aed;color:white} button.dark{background:#0f172a;color:white}
+button.cyan{background:#0891b2;color:white}
+button:disabled{opacity:.45;cursor:not-allowed}
+select,input{border:1px solid #cbd5e1;background:white}
+.canvasWrap{position:relative;overflow:hidden;border-radius:20px}
+canvas{
+  width:100%;height:64vh;min-height:455px;display:block;border-radius:20px;
+  background:linear-gradient(180deg,#ffffff,#f8fbff);border:1px solid #bfdbfe;touch-action:none
+}
+.floating{
+  position:absolute;left:12px;top:12px;display:flex;gap:8px;flex-wrap:wrap;max-width:calc(100% - 24px)
+}
+.pill{
+  background:rgba(255,255,255,.88);border:1px solid #dbeafe;border-radius:999px;padding:7px 10px;
+  font-size:13px;font-weight:900;box-shadow:0 4px 12px #0001
+}
+.progress{
+  position:absolute;left:12px;right:12px;bottom:12px;height:14px;border-radius:999px;background:#e2e8f0;
+  border:1px solid #cbd5e1;overflow:hidden;box-shadow:0 3px 12px #0001
+}
+.progress > div{height:100%;width:0;background:linear-gradient(90deg,#16a34a,#22c55e,#84cc16);transition:width .08s linear}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.box{
+  border-radius:18px;background:#f8fafc;border:1px solid #e2e8f0;padding:10px;min-height:72px
+}
+.box b{display:block;font-size:12px;color:#475569;margin-bottom:5px}
+.value{font-size:22px;font-weight:1000}
+.formula{
+  background:linear-gradient(135deg,#fff7ed,#fffbeb);border:1px solid #fed7aa;border-radius:18px;padding:10px;
+  margin:8px 0;font-size:14px;line-height:1.55
+}
+.switches{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.check{
+  display:flex;align-items:center;gap:7px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;
+  padding:8px;font-size:13px;font-weight:700
+}
+.small{font-size:13px;color:#475569;line-height:1.45}
+.legend{display:flex;gap:8px;flex-wrap:wrap;font-size:13px;margin-bottom:8px}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-1px;margin-right:3px}
+.tableWrap{max-height:200px;overflow:auto;border:1px solid #e2e8f0;border-radius:16px;margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:12px;background:white}
+th,td{border-bottom:1px solid #e2e8f0;padding:6px;text-align:center}
+th{position:sticky;top:0;background:#eff6ff;color:#1e3a8a}
+.challenge{display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:18px;padding:10px;margin-top:8px}
+.challenge h3{margin:0 0 6px;font-size:16px}
+.answerRow{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:7px 0}
+.feedback{min-height:22px;font-weight:900;margin-top:6px}
+.compareBars{display:none;margin-top:8px}
+.barLabel{display:flex;justify-content:space-between;font-size:12px;font-weight:800;margin:5px 0 2px}
+.bar{height:13px;background:#e2e8f0;border-radius:999px;overflow:hidden}
+.bar div{height:100%;width:0;border-radius:999px}
+.pathBar{background:#16a34a}.dispBar{background:#ef4444}
+.toast{
+  position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#0f172a;color:white;
+  padding:10px 14px;border-radius:999px;font-size:14px;font-weight:800;box-shadow:var(--shadow);
+  opacity:0;pointer-events:none;transition:.25s
+}
+.toast.show{opacity:1}
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .tabs{grid-template-columns:1fr 1fr}
+  canvas{height:57vh;min-height:390px}
+}
+@media(max-width:520px){
+  .app{padding:6px}.hero h1{font-size:18px}.hero p{font-size:12px}
+  .tabs{grid-template-columns:1fr}
+  canvas{height:54vh;min-height:330px}
+  .stats{grid-template-columns:1fr 1fr}.switches{grid-template-columns:1fr}
+  button,select,input{font-size:12px;padding:8px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hero">
+    <h1>Physics Lab Ultra: Quãng đường và véc tơ độ dịch chuyển</h1>
+    <p>Hoạt hình mượt, đường đi hiện theo vật, véc tơ mọc dần, bảng số liệu, luyện tập và chế độ giáo viên/học sinh.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-mode="basic">🟢 Cơ bản</button>
+    <button class="tab" data-mode="explore">🟡 Khám phá</button>
+    <button class="tab" data-mode="practice">🔴 Luyện tập</button>
+    <button class="tab" data-mode="compare">🧪 So sánh</button>
+  </div>
+
+  <div class="layout">
+    <div class="card">
+      <div class="toolbar">
+        <button class="primary" id="playBtn">▶ Chạy mô phỏng</button>
+        <button id="pauseBtn">⏸ Tạm dừng</button>
+        <button class="dark" id="stepBtn">▸ Từng bước</button>
+        <button id="undoBtn">↶ Xóa điểm</button>
+        <button class="red" id="resetBtn">Làm lại</button>
+        <select id="preset">
+          <option value="">Thư viện quỹ đạo</option>
+          <option value="line">Đường thẳng</option>
+          <option value="L">Hình chữ L</option>
+          <option value="zigzag">Zigzag</option>
+          <option value="rect">Hình chữ nhật</option>
+          <option value="triangle">Tam giác</option>
+          <option value="return">Đi rồi quay về A</option>
+          <option value="circle">Gần đường tròn</option>
+          <option value="sin">Đường sin</option>
+          <option value="eight">Hình số 8</option>
+          <option value="random">Ngẫu nhiên</option>
+        </select>
+        <select id="objectType">
+          <option value="car">🚗 Xe</option>
+          <option value="ball">⚽ Bóng</option>
+          <option value="person">🚶 Người</option>
+          <option value="bike">🚴 Xe đạp</option>
+        </select>
+        <select id="speed">
+          <option value="0.7">Chậm</option>
+          <option value="1.15" selected>Vừa</option>
+          <option value="2">Nhanh</option>
+          <option value="3.2">Rất nhanh</option>
+        </select>
+      </div>
+
+      <div class="canvasWrap">
+        <canvas id="canvas"></canvas>
+        <div class="floating">
+          <div class="pill" id="modeBadge">Chế độ: Cơ bản</div>
+          <div class="pill" id="timeBadge">t = 0,0 s</div>
+          <div class="pill" id="teacherBadge">Giáo viên: hiện đáp án</div>
+        </div>
+        <div class="progress"><div id="progressFill"></div></div>
+      </div>
+      <div class="small" style="margin-top:8px">
+        Chấm các vị trí vật đi qua. Ở chế độ Khám phá có thể kéo thả các điểm. Điểm đầu tiên là A, điểm cuối là vị trí kết thúc.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="legend">
+        <span><span class="dot" style="background:#2563eb"></span>A</span>
+        <span><span class="dot" style="background:#f59e0b"></span>Điểm đi qua</span>
+        <span><span class="dot" style="background:#16a34a"></span>Quãng đường</span>
+        <span><span class="dot" style="background:#ef4444"></span>Độ dịch chuyển</span>
+      </div>
+
+      <div class="toolbar">
+        <button class="purple" id="studentBtn">Ẩn đáp án</button>
+        <button class="cyan" id="exportBtn">Lưu bài</button>
+        <button class="orange" id="loadBtn">Mở bài đã lưu</button>
+      </div>
+
+      <div class="stats">
+        <div class="box"><b>Tổng quãng đường</b><div class="value" id="pathVal">0 ô</div></div>
+        <div class="box"><b>Độ lớn độ dịch chuyển</b><div class="value" id="dispVal">0 ô</div></div>
+        <div class="box"><b>Δx</b><div class="value" id="dxVal">0 ô</div></div>
+        <div class="box"><b>Δy</b><div class="value" id="dyVal">0 ô</div></div>
+      </div>
+
+      <div class="compareBars" id="compareBars">
+        <div class="barLabel"><span>Quãng đường</span><span id="pathBarVal">0 ô</span></div>
+        <div class="bar"><div class="pathBar" id="pathBar"></div></div>
+        <div class="barLabel"><span>Độ dịch chuyển</span><span id="dispBarVal">0 ô</span></div>
+        <div class="bar"><div class="dispBar" id="dispBar"></div></div>
+      </div>
+
+      <div class="formula" id="formula">
+        Chấm ít nhất 2 điểm để hiện công thức:<br>
+        <b>d = √[(x<sub>cuối</sub> − x<sub>A</sub>)² + (y<sub>cuối</sub> − y<sub>A</sub>)²]</b>
+      </div>
+
+      <div class="switches">
+        <label class="check"><input type="checkbox" id="gridToggle" checked> Lưới tọa độ</label>
+        <label class="check"><input type="checkbox" id="coordToggle" checked> Tọa độ điểm</label>
+        <label class="check"><input type="checkbox" id="smallVectorToggle"> Véc tơ từng chặng</label>
+        <label class="check"><input type="checkbox" id="triangleToggle" checked> Tam giác Δx, Δy</label>
+        <label class="check"><input type="checkbox" id="trailToggle" checked> Vệt chuyển động</label>
+        <label class="check"><input type="checkbox" id="smoothVectorToggle" checked> Véc tơ mọc dần</label>
+      </div>
+
+      <div class="small" id="explain"><b>Nhận xét:</b> Quãng đường phụ thuộc toàn bộ đường đi. Độ dịch chuyển chỉ phụ thuộc vị trí đầu và vị trí cuối.</div>
+
+      <div class="tableWrap">
+        <table>
+          <thead><tr><th>Điểm</th><th>x</th><th>y</th><th>Đoạn trước</th><th>Cộng dồn</th></tr></thead>
+          <tbody id="dataBody"><tr><td colspan="5">Chưa có dữ liệu</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="challenge" id="challengeBox">
+        <h3>🎯 Luyện tập</h3>
+        <div class="small" id="questionText"></div>
+        <div class="answerRow">
+          <input id="ansPath" type="number" step="0.1" placeholder="Quãng đường">
+          <input id="ansDisp" type="number" step="0.1" placeholder="Độ dịch chuyển">
+        </div>
+        <button class="green" id="checkBtn">Kiểm tra</button>
+        <button class="purple" id="newTaskBtn">Bài mới</button>
+        <div class="feedback" id="feedback"></div>
+        <div class="small">Làm tròn đến 0,1 ô. Điểm hiện tại: <b id="scoreText">0/0</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const canvas=document.getElementById("canvas"),ctx=canvas.getContext("2d");
+const $=id=>document.getElementById(id);
+const scale=42;
+let points=[], mode="basic", teacher=true;
+let showGrid=true,showCoord=true,showSmallVectors=false,showTriangle=true,showTrail=true,smoothVector=true;
+let dragIndex=-1, score={right:0,total:0};
+let anim={playing:false,paused:false,seg:0,t:0,time:0,current:null,drawnPath:0,trail:[],vectorGrow:0};
+
+function resize(){const r=canvas.getBoundingClientRect();canvas.width=r.width*devicePixelRatio;canvas.height=r.height*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);draw();}
+window.addEventListener("resize",resize);setTimeout(resize,60);
+function origin(){return{x:canvas.clientWidth/2,y:canvas.clientHeight/2}}
+function toGrid(p){const o=origin();return{x:(p.x-o.x)/scale,y:(o.y-p.y)/scale}}
+function toCanvas(g){const o=origin();return{x:o.x+g.x*scale,y:o.y-g.y*scale}}
+function dpx(a,b){return Math.hypot(b.x-a.x,b.y-a.y)}
+function dg(a,b){return dpx(a,b)/scale}
+function fmt(x){return (Math.round(x*10)/10).toFixed(1)}
+function ease(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2}
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1600)}
+function calc(){
+ let path=0,segs=[]; for(let i=1;i<points.length;i++){let s=dg(points[i-1],points[i]);path+=s;segs.push(s)}
+ let dx=0,dy=0,disp=0;if(points.length>=2){let A=toGrid(points[0]),B=toGrid(points.at(-1));dx=B.x-A.x;dy=B.y-A.y;disp=Math.hypot(dx,dy)}
+ return{path,segs,dx,dy,disp}
+}
+function totalPx(){let s=0;for(let i=1;i<points.length;i++)s+=dpx(points[i-1],points[i]);return s}
+function pointAtLength(L){
+ if(points.length===0)return null; if(L<=0)return{p:points[0],angle:0,seg:0};
+ let acc=0; for(let i=1;i<points.length;i++){let a=points[i-1],b=points[i],len=dpx(a,b); if(acc+len>=L){let t=(L-acc)/len;return{p:{x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t},angle:Math.atan2(b.y-a.y,b.x-a.x),seg:i-1}} acc+=len}
+ let a=points.at(-2)||points[0],b=points.at(-1); return{p:b,angle:Math.atan2(b.y-a.y,b.x-a.x),seg:points.length-2}
+}
+function drawGrid(){
+ const w=canvas.clientWidth,h=canvas.clientHeight,o=origin();
+ ctx.lineWidth=1;ctx.strokeStyle="#e2e8f0";
+ for(let x=o.x%scale;x<w;x+=scale){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+ for(let y=o.y%scale;y<h;y+=scale){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+ ctx.strokeStyle="#94a3b8";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,o.y);ctx.lineTo(w,o.y);ctx.stroke();ctx.beginPath();ctx.moveTo(o.x,0);ctx.lineTo(o.x,h);ctx.stroke();
+ ctx.fillStyle="#475569";ctx.font="12px Arial";ctx.fillText("x",w-16,o.y-8);ctx.fillText("y",o.x+8,16);
+ for(let x=o.x+scale,n=1;x<w;x+=scale,n++)ctx.fillText(n,x-4,o.y+16);
+ for(let x=o.x-scale,n=-1;x>0;x-=scale,n--)ctx.fillText(n,x-8,o.y+16);
+ for(let y=o.y-scale,n=1;y>0;y-=scale,n++)ctx.fillText(n,o.x+6,y+4);
+ for(let y=o.y+scale,n=-1;y<h;y+=scale,n--)ctx.fillText(n,o.x+6,y+4);
+}
+function arrow(x1,y1,x2,y2,color,width,alpha=1){
+ ctx.save();ctx.globalAlpha=alpha;const ang=Math.atan2(y2-y1,x2-x1),head=14;
+ ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=width;ctx.lineCap="round";
+ ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-head*Math.cos(ang-Math.PI/6),y2-head*Math.sin(ang-Math.PI/6));ctx.lineTo(x2-head*Math.cos(ang+Math.PI/6),y2-head*Math.sin(ang+Math.PI/6));ctx.closePath();ctx.fill();ctx.restore();
+}
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function vehicle(p,angle){
+ const type=$("objectType").value; ctx.save();ctx.translate(p.x,p.y);ctx.rotate(angle);
+ if(type==="car"){
+  ctx.fillStyle="#1d4ed8";ctx.strokeStyle="#0f172a";ctx.lineWidth=2;roundRect(ctx,-23,-12,46,22,8);ctx.fill();ctx.stroke();
+  ctx.fillStyle="#bfdbfe";roundRect(ctx,-8,-23,22,13,5);ctx.fill();ctx.stroke();
+  ctx.fillStyle="#fde047";ctx.fillRect(19,-6,5,5);ctx.fillStyle="#111827";
+  ctx.beginPath();ctx.arc(-13,13,6,0,Math.PI*2);ctx.arc(14,13,6,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle="#f8fafc";ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-16,13);ctx.lineTo(-10,13);ctx.moveTo(11,13);ctx.lineTo(17,13);ctx.stroke();
+ }else{
+  ctx.font="30px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.rotate(-angle);ctx.fillText(type==="ball"?"⚽":type==="person"?"🚶":"🚴",0,0);
+ }
+ ctx.restore();
+}
+function drawPartialPath(L){
+ if(points.length<2)return;
+ ctx.strokeStyle="#16a34a";ctx.lineWidth=6;ctx.lineCap="round";ctx.lineJoin="round";
+ ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
+ let acc=0;
+ for(let i=1;i<points.length;i++){
+  let a=points[i-1],b=points[i],len=dpx(a,b);
+  if(acc+len<=L){ctx.lineTo(b.x,b.y);acc+=len}
+  else{let t=(L-acc)/len;ctx.lineTo(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t);break}
+ }
+ ctx.stroke();
+}
+function drawFullPath(){if(points.length<2)return;ctx.strokeStyle="#bbf7d0";ctx.lineWidth=4;ctx.setLineDash([8,8]);ctx.lineCap="round";ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);ctx.stroke();ctx.setLineDash([])}
+function draw(){
+ const w=canvas.clientWidth,h=canvas.clientHeight;ctx.clearRect(0,0,w,h); if(showGrid)drawGrid();
+ const full=totalPx(); const L=anim.playing?anim.drawnPath:full;
+ if(points.length>=2){drawFullPath(); drawPartialPath(L)}
+ if(showTrail && anim.trail.length>1){for(let i=1;i<anim.trail.length;i++){ctx.globalAlpha=i/anim.trail.length*.28;ctx.fillStyle="#22c55e";ctx.beginPath();ctx.arc(anim.trail[i].x,anim.trail[i].y,5,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1}
+ if(showSmallVectors&&points.length>=2){for(let i=1;i<points.length;i++)arrow(points[i-1].x,points[i-1].y,points[i].x,points[i].y,"#64748b",2,.6)}
+ if(points.length>=2){
+  let A=points[0],B=points.at(-1), end=B;
+  if(smoothVector){let g=anim.playing?anim.vectorGrow:1; end={x:A.x+(B.x-A.x)*g,y:A.y+(B.y-A.y)*g}}
+  if(showTriangle){
+   ctx.save();ctx.fillStyle="rgba(249,115,22,.08)";ctx.strokeStyle="#f97316";ctx.lineWidth=2;ctx.setLineDash([6,6]);
+   ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,A.y);ctx.lineTo(B.x,B.y);ctx.closePath();ctx.fill();ctx.stroke();ctx.setLineDash([]);
+   ctx.fillStyle="#ea580c";ctx.font="bold 13px Arial";ctx.fillText("Δx",(A.x+B.x)/2,A.y-8);ctx.fillText("Δy",B.x+8,(A.y+B.y)/2);ctx.restore();
+  }
+  arrow(A.x,A.y,end.x,end.y,"#ef4444",4,1);
+ }
+ points.forEach((p,i)=>{
+  ctx.fillStyle=i===0?"#2563eb":"#f59e0b";ctx.strokeStyle="#0f172a";ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(p.x,p.y,8,0,Math.PI*2);ctx.fill();ctx.stroke();
+  let g=toGrid(p),label=i===0?"A":(i===points.length-1?"Cuối":String(i));
+  ctx.fillStyle="#0f172a";ctx.font="bold 14px Arial";ctx.fillText(label,p.x+11,p.y-11);
+  if(showCoord){ctx.font="12px Arial";ctx.fillStyle="#475569";ctx.fillText(`(${fmt(g.x)}; ${fmt(g.y)})`,p.x+11,p.y+8)}
+ });
+ let obj=anim.playing&&anim.current?anim.current:(points.length?{p:points.at(-1),angle:points.length>=2?Math.atan2(points.at(-1).y-points.at(-2).y,points.at(-1).x-points.at(-2).x):0}:null);
+ if(obj)vehicle(obj.p,obj.angle);
+ updatePanel();
+}
+function hide(v){return teacher?v:"?"}
+function updatePanel(){
+ const c=calc(), max=Math.max(c.path,c.disp,1);
+ $("pathVal").textContent=hide(fmt(c.path)+" ô");$("dispVal").textContent=hide(fmt(c.disp)+" ô");$("dxVal").textContent=hide(fmt(c.dx)+" ô");$("dyVal").textContent=hide(fmt(c.dy)+" ô");
+ $("pathBar").style.width=(c.path/max*100)+"%";$("dispBar").style.width=(c.disp/max*100)+"%";$("pathBarVal").textContent=hide(fmt(c.path)+" ô");$("dispBarVal").textContent=hide(fmt(c.disp)+" ô");
+ const prog=totalPx()?Math.min(100,anim.drawnPath/totalPx()*100):0;$("progressFill").style.width=prog+"%";$("timeBadge").textContent=`t = ${fmt(anim.time)} s`;
+ if(points.length>=2&&teacher){$("formula").innerHTML=`d = √[(x<sub>cuối</sub> − x<sub>A</sub>)² + (y<sub>cuối</sub> − y<sub>A</sub>)²]<br>d = √[(${fmt(c.dx)})² + (${fmt(c.dy)})²] = <b>${fmt(c.disp)} ô</b>`}
+ else if(points.length>=2){$("formula").innerHTML=`Chế độ học sinh: hãy tự tính <b>quãng đường</b> và <b>độ lớn độ dịch chuyển</b>.`}
+ else{$("formula").innerHTML=`Chấm ít nhất 2 điểm để hiện công thức:<br><b>d = √[(x<sub>cuối</sub> − x<sub>A</sub>)² + (y<sub>cuối</sub> − y<sub>A</sub>)²]</b>`}
+ if(points.length>=2){let diff=c.path-c.disp;$("explain").innerHTML=diff<.05?"<b>Nhận xét:</b> Khi vật đi thẳng từ A đến điểm cuối, quãng đường bằng độ lớn độ dịch chuyển.":`<b>Nhận xét:</b> Vật đi đường vòng/gấp khúc nên quãng đường lớn hơn độ dịch chuyển <b>${hide(fmt(diff)+" ô")}</b>.`}
+ updateTable(c);
+}
+function updateTable(c){
+ const body=$("dataBody"); if(!points.length){body.innerHTML='<tr><td colspan="5">Chưa có dữ liệu</td></tr>';return}
+ let html="",cum=0;points.forEach((p,i)=>{let g=toGrid(p),seg=0;if(i>0){seg=dg(points[i-1],p);cum+=seg}let label=i===0?"A":(i===points.length-1?"Cuối":String(i));html+=`<tr><td>${label}</td><td>${fmt(g.x)}</td><td>${fmt(g.y)}</td><td>${hide(fmt(seg))}</td><td>${hide(fmt(cum))}</td></tr>`});body.innerHTML=html;
+}
+function nearest(p){for(let i=points.length-1;i>=0;i--)if(dpx(points[i],p)<20)return i;return-1}
+canvas.addEventListener("pointerdown",e=>{const r=canvas.getBoundingClientRect(),p={x:e.clientX-r.left,y:e.clientY-r.top}; if(mode==="explore"){dragIndex=nearest(p);if(dragIndex>=0){canvas.setPointerCapture(e.pointerId);return}} points.push(p);stop();draw()});
+canvas.addEventListener("pointermove",e=>{if(dragIndex>=0){const r=canvas.getBoundingClientRect();points[dragIndex]={x:e.clientX-r.left,y:e.clientY-r.top};stop();draw()}});
+canvas.addEventListener("pointerup",()=>dragIndex=-1);
+function play(){if(points.length<2){toast("Hãy chấm ít nhất 2 điểm.");return}anim.playing=true;anim.paused=false;anim.time=0;anim.drawnPath=0;anim.trail=[];anim.vectorGrow=0;requestAnimationFrame(loop)}
+function pause(){anim.paused=!anim.paused;if(!anim.paused)requestAnimationFrame(loop)}
+function stepOnce(){if(points.length<2)return; if(!anim.playing){anim.playing=true;anim.paused=true;anim.drawnPath=0;anim.time=0;anim.trail=[]} anim.drawnPath=Math.min(totalPx(),anim.drawnPath+scale*.5);anim.current=pointAtLength(anim.drawnPath);anim.vectorGrow=totalPx()?anim.drawnPath/totalPx():1;draw()}
+function stop(){anim.playing=false;anim.paused=false;anim.current=null;anim.drawnPath=0;anim.vectorGrow=1;$("progressFill").style.width="0%"}
+let last=0;
+function loop(ts){if(!anim.playing||anim.paused)return;if(!last)last=ts;let dt=Math.min((ts-last)/1000,.05);last=ts;let sp=parseFloat($("speed").value);anim.time+=dt;anim.drawnPath+=dt*scale*2.8*sp;let full=totalPx();let ratio=full?Math.min(1,anim.drawnPath/full):1;anim.vectorGrow=ratio;anim.current=pointAtLength(Math.min(anim.drawnPath,full));if(anim.current){anim.trail.push(anim.current.p);if(anim.trail.length>28)anim.trail.shift()}draw(); if(anim.drawnPath>=full){anim.drawnPath=full;anim.vectorGrow=1;draw();anim.playing=false;last=0;return}requestAnimationFrame(loop)}
+function preset(kind){
+ if(!kind)return; const G=a=>a.map(([x,y])=>toCanvas({x,y}));
+ if(kind==="line")points=G([[-4,0],[4,0]]);
+ if(kind==="L")points=G([[-4,-2],[-4,2],[3,2]]);
+ if(kind==="zigzag")points=G([[-5,2],[-3,-1],[-1,2],[1,-2],[4,1]]);
+ if(kind==="rect")points=G([[-4,2],[3,2],[3,-2],[-4,-2],[-4,2]]);
+ if(kind==="triangle")points=G([[-3,-2],[0,3],[4,-2],[-3,-2]]);
+ if(kind==="return")points=G([[-4,0],[-1,2],[2,-1],[4,1],[-4,0]]);
+ if(kind==="circle"){points=[];for(let i=0;i<=18;i++){let a=i/18*Math.PI*2;points.push(toCanvas({x:3*Math.cos(a),y:3*Math.sin(a)}))}}
+ if(kind==="sin"){points=[];for(let i=-5;i<=5;i++)points.push(toCanvas({x:i,y:2*Math.sin(i*0.9)}))}
+ if(kind==="eight"){points=[];for(let i=0;i<=32;i++){let t=i/32*Math.PI*2;points.push(toCanvas({x:3*Math.sin(t),y:2*Math.sin(2*t)}))}}
+ if(kind==="random"){points=[];for(let i=0;i<6;i++)points.push(toCanvas({x:-5+i*2,y:Math.round((Math.random()*5-2.5)*10)/10}))}
+ stop();draw();$("preset").value="";
+}
+function newTask(){
+ const tasks=["L","zigzag","rect","triangle","return"]; preset(tasks[Math.floor(Math.random()*tasks.length)]);
+ teacher=false;$("studentBtn").textContent="Hiện đáp án";$("teacherBadge").textContent="Học sinh: ẩn đáp án";
+ $("questionText").innerHTML="Quan sát hình, hãy nhập <b>tổng quãng đường</b> và <b>độ lớn véc tơ độ dịch chuyển</b>.";
+ $("ansPath").value="";$("ansDisp").value="";$("feedback").textContent="";draw();
+}
+function check(){
+ const c=calc(),ap=parseFloat($("ansPath").value),ad=parseFloat($("ansDisp").value);
+ if(Number.isNaN(ap)||Number.isNaN(ad)){ $("feedback").style.color="#ef4444";$("feedback").textContent="Hãy nhập đủ hai kết quả.";return}
+ score.total++;let ok=Math.abs(ap-parseFloat(fmt(c.path)))<=.11&&Math.abs(ad-parseFloat(fmt(c.disp)))<=.11;
+ if(ok){score.right++;$("feedback").style.color="#16a34a";$("feedback").textContent="✅ Chính xác!"}else{$("feedback").style.color="#ef4444";$("feedback").textContent=`❌ Chưa đúng. Đáp án: s = ${fmt(c.path)} ô, d = ${fmt(c.disp)} ô.`}
+ $("scoreText").textContent=`${score.right}/${score.total}`; teacher=true;$("studentBtn").textContent="Ẩn đáp án";$("teacherBadge").textContent="Giáo viên: hiện đáp án";draw();
+}
+function saveLesson(){localStorage.setItem("ultraDisplacementLesson",JSON.stringify(points.map(toGrid)));toast("Đã lưu bài vào trình duyệt.")}
+function loadLesson(){let raw=localStorage.getItem("ultraDisplacementLesson");if(!raw){toast("Chưa có bài đã lưu.");return}points=JSON.parse(raw).map(toCanvas);stop();draw();toast("Đã mở bài đã lưu.")}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");mode=b.dataset.mode;$("modeBadge").textContent="Chế độ: "+(mode==="basic"?"Cơ bản":mode==="explore"?"Khám phá":mode==="practice"?"Luyện tập":"So sánh");$("challengeBox").style.display=mode==="practice"?"block":"none";$("compareBars").style.display=mode==="compare"?"block":"none";if(mode==="practice")newTask();draw()});
+$("playBtn").onclick=play;$("pauseBtn").onclick=pause;$("stepBtn").onclick=stepOnce;$("undoBtn").onclick=()=>{points.pop();stop();draw()};$("resetBtn").onclick=()=>{points=[];stop();draw()};
+$("preset").onchange=e=>preset(e.target.value);$("gridToggle").onchange=e=>{showGrid=e.target.checked;draw()};$("coordToggle").onchange=e=>{showCoord=e.target.checked;draw()};$("smallVectorToggle").onchange=e=>{showSmallVectors=e.target.checked;draw()};$("triangleToggle").onchange=e=>{showTriangle=e.target.checked;draw()};$("trailToggle").onchange=e=>{showTrail=e.target.checked;draw()};$("smoothVectorToggle").onchange=e=>{smoothVector=e.target.checked;draw()};
+$("studentBtn").onclick=()=>{teacher=!teacher;$("studentBtn").textContent=teacher?"Ẩn đáp án":"Hiện đáp án";$("teacherBadge").textContent=teacher?"Giáo viên: hiện đáp án":"Học sinh: ẩn đáp án";draw()};
+$("exportBtn").onclick=saveLesson;$("loadBtn").onclick=loadLesson;$("newTaskBtn").onclick=newTask;$("checkBtn").onclick=check;
+resize();preset("zigzag");
+</script>
+</body>
+</html>

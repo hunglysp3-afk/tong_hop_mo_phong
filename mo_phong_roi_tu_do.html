@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mô phỏng thực hành rơi tự do - Đo gia tốc trọng trường</title>
+<style>
+  :root{
+    --bg:#f4f7fb; --card:#ffffff; --ink:#172033; --muted:#5d6880;
+    --primary:#2563eb; --primary2:#1d4ed8; --danger:#dc2626; --ok:#16a34a;
+    --line:#dbe3f0; --shadow:0 12px 30px rgba(20,40,80,.12);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:linear-gradient(180deg,#eef5ff 0%,var(--bg) 45%,#f8fafc 100%);
+    color:var(--ink);
+  }
+  header{padding:18px 14px 8px;text-align:center}
+  header h1{margin:0;font-size:clamp(20px,4vw,34px);color:#10234d}
+  header p{margin:8px auto 0;max-width:920px;color:var(--muted);font-size:15px}
+  .wrap{
+    display:grid; grid-template-columns:minmax(300px,1fr) 380px;
+    gap:14px; max-width:1200px; margin:0 auto; padding:12px;
+  }
+  .card{
+    background:rgba(255,255,255,.94); border:1px solid var(--line);
+    border-radius:18px; box-shadow:var(--shadow); overflow:hidden;
+  }
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap;
+  }
+  .badge{
+    display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border-radius:999px;
+    background:#eff6ff;color:#1e40af;font-weight:800;font-size:13px;
+  }
+  .canvas-wrap{
+    position:relative;
+    height:clamp(430px, 68vh, 620px);
+    background:
+      linear-gradient(90deg, rgba(37,99,235,.07) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(37,99,235,.07) 1px, transparent 1px),
+      linear-gradient(180deg,#f8fbff,#eef5ff);
+    background-size:40px 40px;
+  }
+  canvas{display:block;width:100%;height:100%}
+  .panel{padding:14px}
+  .section{padding:12px 0;border-bottom:1px dashed #cfd8e8}
+  .section:last-child{border-bottom:0}
+  .section h2{margin:0 0 10px;font-size:17px;color:#0f2a5d}
+  label{display:block;font-weight:750;margin:10px 0 5px;font-size:14px}
+  input[type=number], select{
+    width:100%;padding:10px 11px;border:1px solid #cbd5e1;border-radius:10px;
+    font-size:15px;background:white;
+  }
+  .input-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  button{
+    border:0;border-radius:12px;padding:11px 10px;font-weight:850;cursor:pointer;
+    background:#e2e8f0;color:#172033;box-shadow:0 3px 0 rgba(15,23,42,.12);
+  }
+  button.primary{background:var(--primary);color:white}
+  button.primary:hover{background:var(--primary2)}
+  button.danger{background:#fee2e2;color:#991b1b}
+  button.ok{background:#dcfce7;color:#166534}
+  button:active{transform:translateY(1px);box-shadow:0 1px 0 rgba(15,23,42,.12)}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .stat{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:10px}
+  .stat small{display:block;color:var(--muted);font-size:12px}
+  .stat b{display:block;font-size:18px;margin-top:2px;color:#0f172a}
+  table{width:100%;border-collapse:collapse;font-size:13px;background:white;border-radius:12px;overflow:hidden}
+  th,td{border:1px solid #e2e8f0;padding:7px;text-align:center}
+  th{background:#eff6ff;color:#1e3a8a}
+  .formula{
+    background:#f8fafc;border-left:4px solid var(--primary);padding:10px;border-radius:12px;
+    color:#26344d;line-height:1.55;font-size:14px;
+  }
+  .note{font-size:13px;color:var(--muted);line-height:1.45}
+  .switch{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+  .switch input{transform:scale(1.15)}
+  .floating-controls{
+    position:absolute;
+    left:10px;
+    right:10px;
+    bottom:10px;
+    z-index:4;
+    display:grid;
+    grid-template-columns:1.1fr 1fr .95fr;
+    gap:6px;
+    padding:7px;
+    border-radius:12px;
+    background:rgba(255,255,255,.78);
+    border:1px solid rgba(203,213,225,.92);
+    box-shadow:0 8px 20px rgba(15,23,42,.14);
+    backdrop-filter:blur(7px);
+  }
+  .floating-controls button{
+    padding:8px 6px;
+    font-size:12.2px;
+    border-radius:9px;
+    box-shadow:none;
+    line-height:1.15;
+    min-height:34px;
+  }
+  .panel .btns{
+    display:none;
+  }
+
+
+  .mode-box{
+    margin-top:10px;
+    padding:10px;
+    border-radius:14px;
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+  }
+  .full-btn{
+    width:100%;
+    margin-top:10px;
+  }
+  .analysis-box{
+    margin-top:10px;
+    padding:10px;
+    border-radius:14px;
+    background:#f0fdf4;
+    border:1px solid #bbf7d0;
+    color:#14532d;
+    font-size:13px;
+    line-height:1.45;
+  }
+  .analysis-box b{color:#166534}
+
+  .toast{
+    position:absolute;left:50%;top:58px;transform:translateX(-50%);
+    background:#0f172a;color:white;padding:9px 12px;border-radius:999px;
+    font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:3;
+  }
+  .toast.show{opacity:1}
+  @media(max-width:900px){
+    header{padding:10px 10px 4px}
+    header p{font-size:13px}
+    .wrap{grid-template-columns:1fr; gap:10px; padding:8px}
+    .topbar{padding:8px 10px}
+    .badge{font-size:12px; padding:6px 8px}
+    .canvas-wrap{height:clamp(390px, 62vh, 540px)}
+  }
+  @media(max-width:520px){
+    header h1{font-size:19px}
+    header p{display:none}
+    .wrap{padding:6px}
+    .panel{padding:10px}
+    .input-grid{grid-template-columns:1fr 1fr}
+    .stats{grid-template-columns:1fr 1fr}
+    .section{padding:9px 0}
+    .section h2{font-size:15px}
+    label{font-size:12.5px; margin:7px 0 4px}
+    input[type=number], select{padding:8px 9px; font-size:13px}
+    table{font-size:12px}
+    th,td{padding:5px 4px}
+    .canvas-wrap{height:calc(100vh - 255px); min-height:390px; max-height:560px}
+    .floating-controls{
+      left:7px; right:7px; bottom:7px;
+      grid-template-columns:repeat(3, 1fr);
+      gap:4px;
+      padding:5px;
+      border-radius:10px;
+    }
+    .floating-controls button{
+      padding:7px 3px;
+      font-size:11px;
+      min-height:31px;
+      border-radius:8px;
+    }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Mô phỏng thực hành rơi tự do</h1>
+  <p>Nhập độ cao rơi, bấm thả vật, đo thời gian rơi và tính gia tốc trọng trường theo công thức g = 2s/t².</p>
+</header>
+
+<main class="wrap">
+  <section class="card">
+    <div class="topbar">
+      <span class="badge">Thí nghiệm đo g bằng rơi tự do</span>
+      <div class="switch">
+        <label style="margin:0;font-weight:650"><input id="showStrobe" type="checkbox" checked> Hiện ảnh chớp</label>
+      </div>
+    </div>
+    <div class="canvas-wrap">
+      <input id="showGraph" type="checkbox" style="display:none">
+      <canvas id="cv"></canvas>
+      <div id="toast" class="toast">Đã ghi số liệu</div>
+      <div class="floating-controls" aria-label="Nút điều khiển thí nghiệm">
+        <button class="primary" id="dropBtn">Thả vật</button>
+        <button id="recordBtn">Ghi số liệu</button>
+        <button class="danger" id="resetBtn">Xóa bảng</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="card panel">
+    <div class="section">
+      <h2>1. Thiết lập thí nghiệm</h2>
+
+      <div class="input-grid">
+        <div>
+          <label for="heightNum">Độ cao rơi s (m)</label>
+          <input id="heightNum" type="number" min="0.20" max="2.50" value="1.00" step="0.05">
+        </div>
+        <div>
+          <label for="gNum">g thật của mô phỏng (m/s²)</label>
+          <input id="gNum" type="number" min="8.50" max="10.50" value="9.80" step="0.01">
+        </div>
+      </div>
+
+      <label for="noise">Sai số thời gian ngẫu nhiên</label>
+      <select id="noise">
+        <option value="0">Không có sai số</option>
+        <option value="0.002">±0,002 s</option>
+        <option value="0.005" selected>±0,005 s</option>
+        <option value="0.01">±0,010 s</option>
+        <option value="0.02">±0,020 s</option>
+      </select>
+
+      <label for="speed">Tốc độ quan sát</label>
+      <select id="speed">
+        <option value="0.35">Rất chậm</option>
+        <option value="0.6" selected>Chậm, dễ quan sát</option>
+        <option value="1">Đúng thời gian thật</option>
+        <option value="1.8">Nhanh</option>
+      </select>
+
+      <p class="note" style="margin:12px 0 0">
+        Các nút điều khiển đã được đặt ngay trong khung thí nghiệm để dễ quan sát vật rơi.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>2. Chế độ sử dụng</h2>
+      <label for="modeSelect">Chọn chế độ</label>
+      <select id="modeSelect">
+        <option value="student" selected>Học sinh - tự xử lí số liệu</option>
+        <option value="teacher">Giáo viên - hiện hướng dẫn và đáp án</option>
+        <option value="test">Kiểm tra - tạo bộ số liệu riêng</option>
+      </select>
+
+      <div id="testBox" class="mode-box" style="display:none">
+        <div class="input-grid">
+          <div>
+            <label for="testCount">Số lần đo</label>
+            <input id="testCount" type="number" min="1" max="10" value="5" step="1">
+          </div>
+          <div>
+            <label for="testNoise">Sai số kiểm tra</label>
+            <select id="testNoise">
+              <option value="0.002">Nhỏ</option>
+              <option value="0.005" selected>Vừa</option>
+              <option value="0.01">Lớn</option>
+            </select>
+          </div>
+        </div>
+        <button class="primary full-btn" id="makeTestBtn">Tạo bộ số liệu kiểm tra</button>
+        <p class="note">Chế độ này tự tạo bảng số liệu từ độ cao đang nhập, phù hợp giao bài thực hành cho học sinh.</p>
+      </div>
+
+      <div id="teacherBox" class="mode-box" style="display:none">
+        <div class="formula">
+          <b>Quy trình xử lí:</b><br>
+          1) Đo thời gian rơi t.<br>
+          2) Tính từng giá trị: <b>g = 2s/t²</b>.<br>
+          3) Tính <b>g trung bình</b> từ nhiều lần đo.<br>
+          4) Nhận xét sai số so với 9,80 m/s².
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>3. Kết quả đo hiện tại</h2>
+      <div class="stats">
+        <div class="stat"><small>Thời gian rơi đo được</small><b id="tNow">-- s</b></div>
+        <div class="stat"><small>g tính được</small><b id="gNow">-- m/s²</b></div>
+        <div class="stat"><small>Số lần đo</small><b id="nNow">0</b></div>
+        <div class="stat"><small>g trung bình</small><b id="avgNow">-- m/s²</b></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>4. Bảng số liệu</h2>
+      <table id="dataTable">
+        <thead>
+          <tr><th>Lần</th><th>s (m)</th><th>t (s)</th><th>t² (s²)</th><th>g (m/s²)</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div id="analysisBox" class="analysis-box" style="display:none"></div>
+    </div>
+
+    <div class="section">
+      <h2>5. Công thức xử lí</h2>
+      <div class="formula">
+        Rơi tự do không vận tốc đầu:<br>
+        <b>s = 1/2 · g · t²</b><br>
+        Suy ra:<br>
+        <b>g = 2s / t²</b>
+      </div>
+      <p class="note">
+        Gợi ý: có thể cho học sinh đo nhiều lần ở cùng một độ cao hoặc nhiều độ cao khác nhau,
+        sau đó tính g trung bình và nhận xét sai số.
+      </p>
+    </div>
+  </aside>
+</main>
+
+<script>
+(() => {
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const els = {
+    heightNum: document.getElementById('heightNum'),
+    gNum: document.getElementById('gNum'),
+    noise: document.getElementById('noise'),
+    speed: document.getElementById('speed'),
+    dropBtn: document.getElementById('dropBtn'),
+    recordBtn: document.getElementById('recordBtn'),
+    autoBtn: document.getElementById('autoBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    modeSelect: document.getElementById('modeSelect'),
+    teacherBox: document.getElementById('teacherBox'),
+    testBox: document.getElementById('testBox'),
+    makeTestBtn: document.getElementById('makeTestBtn'),
+    testCount: document.getElementById('testCount'),
+    testNoise: document.getElementById('testNoise'),
+    analysisBox: document.getElementById('analysisBox'),
+    showStrobe: document.getElementById('showStrobe'),
+    showGraph: document.getElementById('showGraph'),
+    tNow: document.getElementById('tNow'),
+    gNow: document.getElementById('gNow'),
+    nNow: document.getElementById('nNow'),
+    avgNow: document.getElementById('avgNow'),
+    tbody: document.querySelector('#dataTable tbody'),
+    toast: document.getElementById('toast')
+  };
+
+  let W=0,H=0,dpr=1;
+  let running=false,startTime=0,simT=0;
+  let lastResult=null, rows=[];
+  let autoMode=false, autoLeft=0;
+
+  function clamp(x,min,max){ return Math.max(min, Math.min(max, x)); }
+  function getS(){
+    let s=parseFloat(els.heightNum.value);
+    if(isNaN(s)) s=1;
+    s=clamp(s,0.2,2.5);
+    els.heightNum.value=s.toFixed(2);
+    return s;
+  }
+  function getG(){
+    let g=parseFloat(els.gNum.value);
+    if(isNaN(g)) g=9.8;
+    g=clamp(g,8.5,10.5);
+    els.gNum.value=g.toFixed(2);
+    return g;
+  }
+  function getNoise(){ return parseFloat(els.noise.value) || 0; }
+  function getSpeed(){ return parseFloat(els.speed.value) || 1; }
+  function randNoise(max){ return (Math.random()*2-1)*max; }
+
+  function resize(){
+    dpr=Math.max(1,Math.min(2,window.devicePixelRatio||1));
+    const rect=cv.getBoundingClientRect();
+    W=rect.width; H=rect.height;
+    cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    draw();
+  }
+
+  function newMeasurement(){
+    const s=getS(), g=getG();
+    const tTrue=Math.sqrt(2*s/g);
+    const tMeasured=Math.max(0.001, tTrue + randNoise(getNoise()));
+    const gMeasured=2*s/(tMeasured*tMeasured);
+    return {s,gTrue:g,tTrue,t:tMeasured,g:gMeasured};
+  }
+
+  function drop(){
+    if(running) return;
+    lastResult=newMeasurement();
+    running=true;
+    simT=0;
+    startTime=performance.now();
+    updateCurrentRunning(0);
+    requestAnimationFrame(loop);
+  }
+
+  function loop(now){
+    if(!running) return;
+    simT=(now-startTime)/1000*getSpeed();
+    if(simT>=lastResult.tTrue){
+      simT=lastResult.tTrue;
+      running=false;
+      updateCurrentFinished(lastResult);
+      draw();
+      if(autoMode){
+        record();
+        autoLeft--;
+        if(autoLeft>0) setTimeout(drop,350);
+        else autoMode=false;
+      }
+      return;
+    }
+    updateCurrentRunning(simT);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function updateCurrentRunning(t){
+    els.tNow.textContent=t.toFixed(4)+' s';
+    els.gNow.textContent='đang đo...';
+  }
+  function updateCurrentFinished(r){
+    els.tNow.textContent=r.t.toFixed(4)+' s';
+    els.gNow.textContent=r.g.toFixed(3)+' m/s²';
+  }
+
+  function record(){
+    if(running) return;
+    if(!lastResult){
+      lastResult=newMeasurement();
+      updateCurrentFinished(lastResult);
+    }
+    rows.push({...lastResult});
+    renderTable();
+    showToast();
+  }
+
+  function renderTable(){
+    els.tbody.innerHTML='';
+    rows.forEach((r,i)=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${i+1}</td><td>${r.s.toFixed(2)}</td><td>${r.t.toFixed(4)}</td><td>${(r.t*r.t).toFixed(4)}</td><td>${r.g.toFixed(3)}</td>`;
+      els.tbody.appendChild(tr);
+    });
+    els.nNow.textContent=rows.length;
+    els.avgNow.textContent=rows.length ? (rows.reduce((a,r)=>a+r.g,0)/rows.length).toFixed(3)+' m/s²' : '-- m/s²';
+    renderAnalysis();
+    draw();
+  }
+
+  function reset(){
+    rows=[]; lastResult=null; running=false; autoMode=false; autoLeft=0;
+    els.tNow.textContent='-- s'; els.gNow.textContent='-- m/s²';
+    renderTable();
+  }
+
+  function autoMeasure(){
+    if(running) return;
+    autoMode=true; autoLeft=5;
+    drop();
+  }
+
+  function updateMode(){
+    const mode = els.modeSelect ? els.modeSelect.value : 'student';
+    if(els.teacherBox) els.teacherBox.style.display = mode === 'teacher' ? 'block' : 'none';
+    if(els.testBox) els.testBox.style.display = mode === 'test' ? 'block' : 'none';
+    renderAnalysis();
+  }
+
+  function makeTestData(){
+    if(running) return;
+    const oldNoise = els.noise.value;
+    const n = Math.max(1, Math.min(10, parseInt(els.testCount.value || '5', 10)));
+    els.noise.value = els.testNoise.value;
+    rows = [];
+    for(let i=0;i<n;i++){
+      lastResult = newMeasurement();
+      rows.push({...lastResult});
+    }
+    els.noise.value = oldNoise;
+    updateCurrentFinished(lastResult);
+    renderTable();
+    showToast();
+  }
+
+  function renderAnalysis(){
+    if(!els.analysisBox) return;
+    const mode = els.modeSelect ? els.modeSelect.value : 'student';
+    if(mode !== 'teacher' || rows.length === 0){
+      els.analysisBox.style.display = 'none';
+      els.analysisBox.innerHTML = '';
+      return;
+    }
+    const avg = rows.reduce((a,r)=>a+r.g,0)/rows.length;
+    const err = Math.abs(avg - 9.80)/9.80*100;
+    els.analysisBox.style.display = 'block';
+    els.analysisBox.innerHTML =
+      `<b>Phân tích dành cho giáo viên:</b><br>
+      Số lần đo: <b>${rows.length}</b><br>
+      Gia tốc trung bình: <b>${avg.toFixed(3)} m/s²</b><br>
+      Sai số tương đối so với 9,80 m/s²: <b>${err.toFixed(2)}%</b><br>
+      Nhận xét: ${err < 2 ? 'Kết quả khá tốt, sai số nhỏ.' : 'Kết quả có sai số đáng kể, cần kiểm tra lại thời gian đo hoặc dụng cụ đo.'}`;
+  }
+
+  function showToast(){
+    els.toast.classList.add('show');
+    setTimeout(()=>els.toast.classList.remove('show'),800);
+  }
+
+  function roundRect(x,y,w,h,r,fill,stroke){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+    if(fill) ctx.fill();
+    if(stroke) ctx.stroke();
+  }
+
+  function drawRuler(x,yTop,yBottom,sMax){
+    ctx.strokeStyle='#334155'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(x,yTop); ctx.lineTo(x,yBottom); ctx.stroke();
+    ctx.fillStyle='#334155'; ctx.font='12px Arial'; ctx.textAlign='right'; ctx.textBaseline='middle';
+    for(let m=0; m<=sMax+0.0001; m+=0.25){
+      const y=yTop+(m/sMax)*(yBottom-yTop);
+      const major=Math.abs((m*100)%50)<1e-6;
+      ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-(major?16:9),y); ctx.stroke();
+      if(major) ctx.fillText(m.toFixed(2)+' m',x-20,y);
+    }
+  }
+
+  function drawGraph(x,y,w,h){
+    ctx.save();
+    ctx.fillStyle='rgba(255,255,255,.86)'; ctx.strokeStyle='#cbd5e1';
+    roundRect(x,y,w,h,14,true,true);
+    ctx.fillStyle='#0f2a5d'; ctx.font='bold 13px Arial'; ctx.textAlign='left';
+    ctx.fillText('Đồ thị s - t²',x+12,y+18);
+
+    const gx=x+36, gy=y+h-32, gw=w-52, gh=h-60;
+    ctx.strokeStyle='#64748b'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(gx,gy); ctx.lineTo(gx+gw,gy); ctx.moveTo(gx,gy); ctx.lineTo(gx,gy-gh); ctx.stroke();
+    ctx.fillStyle='#475569'; ctx.font='11px Arial';
+    ctx.fillText('t²',gx+gw-8,gy+18); ctx.fillText('s',gx-20,gy-gh+5);
+
+    if(rows.length){
+      const maxS=Math.max(...rows.map(r=>r.s),1);
+      const maxT2=Math.max(...rows.map(r=>r.t*r.t),0.25);
+      ctx.fillStyle='#2563eb';
+      rows.forEach(r=>{
+        const px=gx+(r.t*r.t/maxT2)*gw;
+        const py=gy-(r.s/maxS)*gh;
+        ctx.beginPath(); ctx.arc(px,py,4,0,Math.PI*2); ctx.fill();
+      });
+    }
+    ctx.restore();
+  }
+
+  function draw(){
+    if(!W||!H) return;
+    ctx.clearRect(0,0,W,H);
+
+    const s=getS(), g=getG(), sMax=2.5;
+    const yTop=62, yBottom=H-55;
+    const xTrack=Math.min(W*0.52,W-130);
+    const xRuler=Math.max(95,xTrack-92);
+    const releaseY=yTop;
+    const targetY=yTop+(s/sMax)*(yBottom-yTop);
+
+    ctx.strokeStyle='#64748b'; ctx.lineWidth=5;
+    ctx.beginPath();
+    ctx.moveTo(xTrack-35,yTop-22); ctx.lineTo(xTrack+55,yTop-22);
+    ctx.moveTo(xTrack+20,yTop-22); ctx.lineTo(xTrack+20,yBottom+10);
+    ctx.moveTo(xTrack-40,yBottom+10); ctx.lineTo(xTrack+70,yBottom+10);
+    ctx.stroke();
+
+    ctx.fillStyle='#1e3a8a';
+    roundRect(xTrack-55,yTop-40,80,28,8,true,false);
+    ctx.fillStyle='white'; ctx.font='bold 11px Arial'; ctx.textAlign='center';
+    ctx.fillText('Nam châm điện',xTrack-15,yTop-22);
+
+    drawRuler(xRuler,yTop,yBottom,sMax);
+
+    ctx.strokeStyle='#2563eb'; ctx.setLineDash([7,5]); ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(xRuler+12,releaseY); ctx.lineTo(xTrack+90,releaseY);
+    ctx.moveTo(xRuler+12,targetY); ctx.lineTo(xTrack+90,targetY);
+    ctx.stroke(); ctx.setLineDash([]);
+
+    ctx.fillStyle='#1e40af'; ctx.font='bold 13px Arial'; ctx.textAlign='left';
+    ctx.fillText('Vị trí thả',xTrack+96,releaseY);
+    ctx.fillText('Cổng quang / mặt hứng',xTrack+96,targetY);
+
+    ctx.strokeStyle='#dc2626'; ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(xTrack+76,releaseY); ctx.lineTo(xTrack+76,targetY);
+    ctx.moveTo(xTrack+66,releaseY); ctx.lineTo(xTrack+86,releaseY);
+    ctx.moveTo(xTrack+66,targetY); ctx.lineTo(xTrack+86,targetY);
+    ctx.stroke();
+    ctx.fillStyle='#dc2626'; ctx.font='bold 14px Arial'; ctx.textAlign='left';
+    ctx.fillText('s = '+s.toFixed(2)+' m',xTrack+86,(releaseY+targetY)/2);
+
+    let yBall=releaseY;
+    const tEnd=Math.sqrt(2*s/g);
+    if(running || lastResult){
+      const t = running ? simT : tEnd;
+      const fallen=Math.min(0.5*g*t*t,s);
+      yBall=yTop+(fallen/sMax)*(yBottom-yTop);
+    }
+
+    if(els.showStrobe.checked && (running || lastResult)){
+      ctx.fillStyle='rgba(37,99,235,.28)';
+      for(let i=0;i<=8;i++){
+        const ti=tEnd*i/8;
+        const yy=yTop+(Math.min(0.5*g*ti*ti,s)/sMax)*(yBottom-yTop);
+        ctx.beginPath(); ctx.arc(xTrack-35,yy,5,0,Math.PI*2); ctx.fill();
+      }
+      ctx.fillStyle='#475569'; ctx.font='12px Arial'; ctx.textAlign='center';
+      ctx.fillText('Ảnh chớp: khoảng cách tăng dần',xTrack-20,yBottom+35);
+    }
+
+    ctx.fillStyle='#f97316'; ctx.strokeStyle='#9a3412'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(xTrack,yBall,16,0,Math.PI*2); ctx.fill(); ctx.stroke();
+
+    const compact = W < 560;
+    const timerW = compact ? 150 : 190;
+    const timerH = compact ? 54 : 62;
+    ctx.fillStyle='rgba(255,255,255,.88)'; ctx.strokeStyle='#cbd5e1';
+    roundRect(12,12,timerW,timerH,12,true,true);
+    ctx.fillStyle='#0f172a'; ctx.font=compact ? 'bold 11px Arial' : 'bold 12px Arial'; ctx.textAlign='left';
+    ctx.fillText('Thời gian rơi',24,compact ? 30 : 32);
+    ctx.font=compact ? 'bold 19px Arial' : 'bold 22px Arial';
+    const showT=running ? simT : (lastResult ? lastResult.t : 0);
+    ctx.fillText(showT.toFixed(4)+' s',24,compact ? 54 : 59);
+
+    if(els.showGraph.checked){
+      drawGraph(Math.max(16,W-280),H-190,Math.min(260,W-32),170);
+    }
+
+    ctx.fillStyle='#64748b'; ctx.font='12px Arial'; ctx.textAlign='center';
+    ctx.fillText('Nhập s → Thả vật → Ghi số liệu',W/2,H-52);
+  }
+
+  els.dropBtn.addEventListener('click',drop);
+  els.recordBtn.addEventListener('click',record);
+  if(els.autoBtn) els.autoBtn.addEventListener('click',autoMeasure);
+  els.resetBtn.addEventListener('click',reset);
+  if(els.modeSelect) els.modeSelect.addEventListener('change',updateMode);
+  if(els.makeTestBtn) els.makeTestBtn.addEventListener('click',makeTestData);
+  [els.heightNum,els.gNum].forEach(e=>e.addEventListener('change',draw));
+  [els.noise,els.speed,els.showStrobe,els.showGraph].forEach(e=>e.addEventListener('change',draw));
+  window.addEventListener('resize',resize);
+  updateMode();
+  resize();
+})();
+</script>
+</body>
+</html>

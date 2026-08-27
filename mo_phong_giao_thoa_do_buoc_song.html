@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mô phỏng giao thoa ánh sáng - Đo bước sóng</title>
+<style>
+  :root{
+    --bg:#0b1020; --card:#111a33; --card2:#162344; --text:#eef4ff; --muted:#aebbe0;
+    --accent:#72d6ff; --good:#6ee7a8; --warn:#ffd166; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#071022,#101b35);color:var(--text)}
+  header{padding:18px 14px;text-align:center;background:rgba(0,0,0,.18);position:sticky;top:0;z-index:5;backdrop-filter:blur(8px)}
+  h1{font-size:clamp(20px,4vw,34px);margin:0 0 6px;color:#fff}
+  .sub{font-size:14px;color:var(--muted)}
+  main{max-width:1200px;margin:auto;padding:14px;display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
+  @media(max-width:850px){main{grid-template-columns:1fr}.panel{order:2}.sim{order:1}}
+  .card{background:rgba(17,26,51,.92);border:1px solid rgba(255,255,255,.09);border-radius:18px;box-shadow:0 12px 35px rgba(0,0,0,.25);overflow:hidden}
+  .card h2{margin:0;padding:12px 14px;font-size:18px;background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.08)}
+  .content{padding:14px}
+  canvas{width:100%;height:auto;display:block;background:#050816;border-radius:14px;touch-action:none}
+  .controls{display:grid;gap:13px}
+  .ctrl{background:rgba(255,255,255,.045);padding:10px;border-radius:14px;border:1px solid rgba(255,255,255,.07)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+  label{font-size:14px;color:#d9e5ff;font-weight:650}
+  .value{font-variant-numeric:tabular-nums;color:var(--accent);font-weight:750}
+  input[type=range]{width:100%;accent-color:#60ccff}
+  select,button,input[type=number]{width:100%;border:none;border-radius:12px;padding:10px 12px;background:#0b1328;color:var(--text);border:1px solid rgba(255,255,255,.12);font-size:15px}
+  button{cursor:pointer;background:linear-gradient(135deg,#1d7cff,#20c6ff);font-weight:800;color:white;margin-top:8px}
+  button.secondary{background:#0b1328;color:#dbe8ff}
+  button.good{background:linear-gradient(135deg,#10b981,#74e6ad)}
+  button.warn{background:linear-gradient(135deg,#f59e0b,#ffd166);color:#241400}
+  .formula{background:#071026;border-left:4px solid var(--accent);padding:10px;border-radius:12px;margin:10px 0;color:#eaf3ff;line-height:1.6}
+  .result{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  @media(max-width:520px){.result{grid-template-columns:1fr}}
+  .box{background:#081229;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:10px}
+  .box .k{color:var(--muted);font-size:13px}.box .v{font-size:19px;font-weight:850;color:#fff;margin-top:2px}
+  .hint{font-size:13px;color:var(--muted);line-height:1.45;margin-top:8px}
+  .badge{display:inline-flex;gap:6px;align-items:center;padding:5px 9px;border-radius:999px;background:rgba(114,214,255,.12);border:1px solid rgba(114,214,255,.25);color:#dff7ff;font-size:12px;font-weight:700}
+  .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+  .tabs button{margin:0;padding:9px 6px;font-size:13px;background:#0b1328;color:#cfe0ff}
+  .tabs button.active{background:linear-gradient(135deg,#1d7cff,#20c6ff);color:#fff}
+  .practice{display:none}.practice.show{display:block}
+  .small{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Mô phỏng giao thoa ánh sáng - Đo bước sóng</h1>
+  <div class="sub">Khe Young · đo khoảng vân · tính λ · dùng được trên điện thoại</div>
+</header>
+<main>
+  <section class="card sim">
+    <h2>1. Màn giao thoa</h2>
+    <div class="content">
+      <canvas id="canvas" width="980" height="600"></canvas>
+      <div class="hint">Chạm hoặc bấm vào các vân sáng trên màn để chọn 2 vân. Nên chọn vân cách xa nhau, ví dụ bậc -3 và +3, để giảm sai số khi đo.</div>
+    </div>
+  </section>
+
+  <section class="card panel">
+    <h2>2. Điều khiển và đo đạc</h2>
+    <div class="content controls">
+      <div class="tabs">
+        <button id="tabBasic" class="active">Cơ bản</button>
+        <button id="tabMeasure">Đo λ</button>
+        <button id="tabPractice">Luyện tập</button>
+      </div>
+
+      <div class="ctrl">
+        <div class="row"><label>Khoảng cách hai khe a</label><span class="value" id="aVal"></span></div>
+        <input id="a" type="range" min="0.2" max="1.2" value="0.5" step="0.01">
+      </div>
+      <div class="ctrl">
+        <div class="row"><label>Khoảng cách khe đến màn D</label><span class="value" id="dVal"></span></div>
+        <input id="D" type="range" min="0.5" max="3.0" value="2.0" step="0.01">
+      </div>
+      <div class="ctrl" id="lambdaCtrl">
+        <div class="row"><label>Bước sóng λ</label><span class="value" id="lVal"></span></div>
+        <input id="lambda" type="range" min="400" max="700" value="600" step="1">
+      </div>
+      <div class="ctrl">
+        <div class="row"><label>Màu ánh sáng</label><span class="badge" id="colorBadge">Đỏ cam</span></div>
+        <select id="colorSelect">
+          <option value="violet">Tím - 420 nm</option>
+          <option value="blue">Lam - 470 nm</option>
+          <option value="green">Lục - 530 nm</option>
+          <option value="yellow">Vàng - 580 nm</option>
+          <option value="orange" selected>Đỏ cam - 600 nm</option>
+          <option value="red">Đỏ - 650 nm</option>
+          <option value="custom">Tự chỉnh λ</option>
+        </select>
+      </div>
+
+      <div class="ctrl" id="measureBox">
+        <b>Đo bước sóng từ hai vân đã chọn</b>
+        <div class="formula">
+          Khoảng vân: <b>i = L / Δk</b><br>
+          Bước sóng: <b>λ = i.a / D</b>
+        </div>
+        <div class="result">
+          <div class="box"><div class="k">Hai vân đã chọn</div><div class="v" id="selectedInfo">Chưa chọn</div></div>
+          <div class="box"><div class="k">L = |x₂ - x₁|</div><div class="v" id="LInfo">-- mm</div></div>
+          <div class="box"><div class="k">Khoảng vân i</div><div class="v" id="iInfo">-- mm</div></div>
+          <div class="box"><div class="k">λ tính được</div><div class="v" id="lambdaCalc">-- nm</div></div>
+        </div>
+        <button class="secondary" id="clearBtn">Xóa điểm chọn</button>
+      </div>
+
+      <div class="ctrl practice" id="practiceBox">
+        <b>Chế độ luyện tập: đo λ khi chưa biết màu</b>
+        <p class="small">Bấm “Tạo bài mới”, mô phỏng sẽ ẩn bước sóng thật. Em chọn hai vân, tính λ rồi nhập đáp án.</p>
+        <button class="warn" id="newTask">Tạo bài mới</button>
+        <div style="margin-top:8px">
+          <label>Nhập λ đo được, đơn vị nm</label>
+          <input type="number" id="answer" placeholder="Ví dụ: 600">
+          <button class="good" id="checkAnswer">Kiểm tra kết quả</button>
+        </div>
+        <div class="formula" id="feedback">Chưa có bài luyện tập.</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const els = {
+  a:document.getElementById('a'), D:document.getElementById('D'), lambda:document.getElementById('lambda'),
+  aVal:document.getElementById('aVal'), dVal:document.getElementById('dVal'), lVal:document.getElementById('lVal'),
+  colorSelect:document.getElementById('colorSelect'), colorBadge:document.getElementById('colorBadge'),
+  selectedInfo:document.getElementById('selectedInfo'), LInfo:document.getElementById('LInfo'), iInfo:document.getElementById('iInfo'), lambdaCalc:document.getElementById('lambdaCalc'),
+  clearBtn:document.getElementById('clearBtn'), practiceBox:document.getElementById('practiceBox'), measureBox:document.getElementById('measureBox'), lambdaCtrl:document.getElementById('lambdaCtrl'),
+  tabBasic:document.getElementById('tabBasic'), tabMeasure:document.getElementById('tabMeasure'), tabPractice:document.getElementById('tabPractice'),
+  newTask:document.getElementById('newTask'), answer:document.getElementById('answer'), checkAnswer:document.getElementById('checkAnswer'), feedback:document.getElementById('feedback')
+};
+let selected = [];
+let mode = 'basic';
+let hiddenLambda = false;
+const colorMap = {
+  violet:{nm:420,name:'Tím',rgb:[148,78,255]}, blue:{nm:470,name:'Lam',rgb:[80,160,255]}, green:{nm:530,name:'Lục',rgb:[90,245,145]},
+  yellow:{nm:580,name:'Vàng',rgb:[255,225,90]}, orange:{nm:600,name:'Đỏ cam',rgb:[255,145,70]}, red:{nm:650,name:'Đỏ',rgb:[255,70,70]}
+};
+function wavelengthToRGB(w){
+  if(w<450) return [148,78,255]; if(w<500) return [80,160,255]; if(w<560) return [90,245,145]; if(w<600) return [255,225,90]; if(w<630) return [255,145,70]; return [255,70,70];
+}
+function val(){return {a_mm:+els.a.value,D_m:+els.D.value,lambda_nm:+els.lambda.value};}
+function fringeSpacingMM(){const v=val(); return v.lambda_nm*1e-9*v.D_m/(v.a_mm*1e-3)*1000;}
+function setMode(m){
+  mode=m; [els.tabBasic,els.tabMeasure,els.tabPractice].forEach(b=>b.classList.remove('active'));
+  if(m==='basic') els.tabBasic.classList.add('active');
+  if(m==='measure') els.tabMeasure.classList.add('active');
+  if(m==='practice') els.tabPractice.classList.add('active');
+  els.measureBox.style.display = m==='basic' ? 'none':'block';
+  els.practiceBox.classList.toggle('show',m==='practice');
+  hiddenLambda = m==='practice' && hiddenLambda;
+  draw(); updateMeasure();
+}
+function updateLabels(){
+  const v=val(); els.aVal.textContent=v.a_mm.toFixed(2)+' mm'; els.dVal.textContent=v.D_m.toFixed(2)+' m';
+  els.lVal.textContent= hiddenLambda ? 'Ẩn' : v.lambda_nm+' nm';
+  if(els.colorSelect.value==='custom') els.colorBadge.textContent='Tự chỉnh';
+}
+function draw(){
+  const W=canvas.width,H=canvas.height; ctx.clearRect(0,0,W,H);
+  const v=val(); const rgb=wavelengthToRGB(v.lambda_nm); const col=`rgb(${rgb.join(',')})`;
+  const sourceX=110, screenX=W-170, cy=H/2, screenH=430, slitGap=58;
+  // background grid
+  ctx.fillStyle='#050816';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(255,255,255,.07)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+  // slits
+  ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(sourceX,90);ctx.lineTo(sourceX,cy-slitGap/2-22);ctx.moveTo(sourceX,cy-slitGap/2+22);ctx.lineTo(sourceX,cy+slitGap/2-22);ctx.moveTo(sourceX,cy+slitGap/2+22);ctx.lineTo(sourceX,H-90);ctx.stroke();
+  ctx.fillStyle=col; ctx.shadowBlur=18; ctx.shadowColor=col; ctx.beginPath();ctx.arc(sourceX,cy-slitGap/2,7,0,Math.PI*2);ctx.arc(sourceX,cy+slitGap/2,7,0,Math.PI*2);ctx.fill(); ctx.shadowBlur=0;
+  ctx.fillStyle='#dfe9ff';ctx.font='17px system-ui';ctx.fillText('S₁',sourceX-38,cy-slitGap/2+5);ctx.fillText('S₂',sourceX-38,cy+slitGap/2+5);ctx.fillText('Hai khe',sourceX-45,70);
+  // rays
+  ctx.strokeStyle=`rgba(${rgb.join(',')},.22)`; ctx.lineWidth=1.4;
+  for(let k=-4;k<=4;k++){let y=cy + k*44; ctx.beginPath();ctx.moveTo(sourceX,cy-slitGap/2);ctx.lineTo(screenX,y);ctx.moveTo(sourceX,cy+slitGap/2);ctx.lineTo(screenX,y);ctx.stroke();}
+  // screen
+  ctx.fillStyle='rgba(210,225,255,.08)';ctx.fillRect(screenX-26,cy-screenH/2,52,screenH); ctx.strokeStyle='rgba(255,255,255,.45)';ctx.lineWidth=2;ctx.strokeRect(screenX-26,cy-screenH/2,52,screenH);
+  ctx.fillStyle='#dfe9ff';ctx.fillText('Màn quan sát',screenX-62,70);
+  // fringes scaled: 1 mm = scale px adapt
+  const iMM=fringeSpacingMM(); const scale=22; const maxK=Math.floor((screenH/2)/(iMM*scale));
+  for(let k=-maxK;k<=maxK;k++){
+    const y=cy+k*iMM*scale; const bright=1; const w= Math.max(7, 22 - Math.abs(k)*0.4);
+    const grad=ctx.createLinearGradient(screenX-24,y,screenX+24,y); grad.addColorStop(0,`rgba(${rgb.join(',')},.05)`); grad.addColorStop(.5,`rgba(${rgb.join(',')},${0.95*bright})`); grad.addColorStop(1,`rgba(${rgb.join(',')},.05)`);
+    ctx.fillStyle=grad; ctx.shadowBlur=12; ctx.shadowColor=col; ctx.fillRect(screenX-24,y-w/2,48,w); ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(255,255,255,.9)';ctx.font='13px system-ui';ctx.fillText(k,screenX+38,y+4);
+  }
+  // dark bands using sinusoidal feel
+  for(let k=-maxK;k<maxK;k++){const y=cy+(k+.5)*iMM*scale;ctx.fillStyle='rgba(0,0,0,.38)';ctx.fillRect(screenX-25,y-4,50,8)}
+  // selected markers
+  selected.forEach((k,idx)=>{const y=cy+k*iMM*scale;ctx.strokeStyle=idx===0?'#6ee7a8':'#ffd166';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(screenX-42,y);ctx.lineTo(screenX+42,y);ctx.stroke();ctx.fillStyle=ctx.strokeStyle;ctx.font='bold 15px system-ui';ctx.fillText(idx===0?'A':'B',screenX-65,y+5)});
+  // ruler
+  ctx.strokeStyle='rgba(255,255,255,.65)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(screenX+92,cy-screenH/2);ctx.lineTo(screenX+92,cy+screenH/2);ctx.stroke();
+  ctx.fillStyle='#b9c8e9';ctx.font='13px system-ui';
+  for(let k=-maxK;k<=maxK;k++){const y=cy+k*iMM*scale;ctx.beginPath();ctx.moveTo(screenX+86,y);ctx.lineTo(screenX+98,y);ctx.stroke();ctx.fillText((k*iMM).toFixed(1)+' mm',screenX+105,y+4)}
+  // labels bottom
+  ctx.fillStyle='#eaf3ff';ctx.font='16px system-ui';ctx.fillText(`a = ${v.a_mm.toFixed(2)} mm`,35,H-58);ctx.fillText(`D = ${v.D_m.toFixed(2)} m`,35,H-34);
+  ctx.fillText(`i = ${iMM.toFixed(2)} mm`,220,H-58);ctx.fillText(`λ = ${hiddenLambda?'?':v.lambda_nm+' nm'}`,220,H-34);
+}
+function nearestFringe(evt){
+  const rect=canvas.getBoundingClientRect(); const y=(evt.clientY-rect.top)*canvas.height/rect.height; const cy=canvas.height/2; const iMM=fringeSpacingMM(); const scale=22; return Math.round((y-cy)/(iMM*scale));
+}
+canvas.addEventListener('pointerdown',e=>{
+  if(mode==='basic') return;
+  const k=nearestFringe(e); if(Math.abs(k)>20)return;
+  if(selected.length===2) selected=[];
+  if(!selected.includes(k)) selected.push(k);
+  draw(); updateMeasure();
+});
+function updateMeasure(){
+  updateLabels();
+  if(selected.length<2){els.selectedInfo.textContent=selected.length?`k = ${selected[0]}`:'Chưa chọn';els.LInfo.textContent='-- mm';els.iInfo.textContent='-- mm';els.lambdaCalc.textContent='-- nm';return;}
+  const [k1,k2]=selected; const dk=Math.abs(k2-k1); const i=fringeSpacingMM(); const L=i*dk; const lambdaCalc=i*1e-3*(val().a_mm*1e-3)/val().D_m*1e9;
+  els.selectedInfo.textContent=`k=${k1} và k=${k2}`; els.LInfo.textContent=L.toFixed(2)+' mm'; els.iInfo.textContent=(L/dk).toFixed(2)+' mm'; els.lambdaCalc.textContent=lambdaCalc.toFixed(0)+' nm';
+}
+function syncColor(){
+  const c=els.colorSelect.value; if(c!=='custom'){els.lambda.value=colorMap[c].nm; els.colorBadge.textContent=colorMap[c].name;} updateMeasure(); draw();
+}
+['input','change'].forEach(ev=>{els.a.addEventListener(ev,()=>{draw();updateMeasure()});els.D.addEventListener(ev,()=>{draw();updateMeasure()});els.lambda.addEventListener(ev,()=>{els.colorSelect.value='custom';draw();updateMeasure()});});
+els.colorSelect.addEventListener('change',syncColor);
+els.clearBtn.addEventListener('click',()=>{selected=[];draw();updateMeasure()});
+els.tabBasic.onclick=()=>setMode('basic'); els.tabMeasure.onclick=()=>setMode('measure'); els.tabPractice.onclick=()=>setMode('practice');
+els.newTask.onclick=()=>{
+  const presets=[420,470,530,580,600,650]; const lam=presets[Math.floor(Math.random()*presets.length)];
+  els.lambda.value=lam; els.a.value=(0.3+Math.random()*0.7).toFixed(2); els.D.value=(1.2+Math.random()*1.5).toFixed(2); els.colorSelect.value='custom';
+  hiddenLambda=true; selected=[]; els.answer.value=''; els.feedback.innerHTML='Đã tạo bài mới. Hãy chọn hai vân sáng trên màn, tính λ rồi nhập đáp án.'; draw(); updateMeasure();
+};
+els.checkAnswer.onclick=()=>{
+  const ans=+els.answer.value; if(!ans){els.feedback.innerHTML='Em cần nhập kết quả trước.';return;}
+  const real=+els.lambda.value; const err=Math.abs(ans-real)/real*100;
+  if(err<=3) els.feedback.innerHTML=`Rất tốt! λ thật ≈ <b>${real} nm</b>. Sai số của em khoảng <b>${err.toFixed(1)}%</b>.`;
+  else els.feedback.innerHTML=`Chưa chính xác. λ thật ≈ <b>${real} nm</b>. Sai số khoảng <b>${err.toFixed(1)}%</b>. Gợi ý: nên chọn hai vân xa nhau hơn rồi lấy L/Δk.`;
+  hiddenLambda=false; draw(); updateMeasure();
+};
+syncColor(); setMode('basic');
+</script>
+</body>
+</html>
