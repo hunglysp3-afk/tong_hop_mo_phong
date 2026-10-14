@@ -4,291 +4,734 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kho Học Liệu Số - Vật Lý THPT</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />   
- <style>
+    <!-- Font Awesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
         :root {
-            --bg: #f0f2f5;
-            --primary: #2c3e50;
-            --accent: #e74c3c;
-            --text: #333;
+            --bg-color: #f4f6fa;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --radius: 16px;
+            --shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 10px 25px rgba(37, 99, 235, 0.12);
         }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
+
+        * {
+            box-sizing: border-box;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .header h1 {
-            color: var(--primary);
-            margin-bottom: 5px;
-            font-size: 26px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .header p {
-            color: #666;
-            margin: 0;
-            font-size: 15px;
-            font-style: italic;
-        }
-        .menu-container {
-            width: 100%;
-            max-width: 550px;
-            display: grid;
-            gap: 15px;
-        }
-        .menu-item {
-            background: white;
-            padding: 18px 20px;
-            border-radius: 15px;
-            text-decoration: none;
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border-left: 6px solid var(--primary);
-        }
-        .menu-item:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-        }
-        .menu-item:active {
-            transform: scale(0.97);
-        }
-        .icon-box {
-            width: 50px;
-            height: 50px;
-            background: #f8f9fa;
-            border-radius: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-right: 18px;
-            font-size: 22px;
-            color: inherit; /* Lấy màu từ border-left */
-        }
-        .text-box {
-            flex: 1;
-        }
-        .title {
-            font-weight: bold;
-            font-size: 17px;
-            display: block;
-            margin-bottom: 2px;
-        }
-        .subtitle {
-            font-size: 13px;
-            color: #777;
-        }
-        .arrow {
-            color: #ccc;
-            font-size: 14px;
+            padding: 30px 16px 40px;
         }
 
-        /* Định nghĩa màu sắc riêng cho từng chủ đề */
-        .item-generator { border-left-color: #f1c40f; color: #d4ac0d; }
-        .item-circuit { border-left-color: #2ecc71; color: #27ae60; }
-        .item-magnet { border-left-color: #e67e22; color: #d35400; }
-        .item-electric-field { border-left-color: #9b59b6; color: #8e44ad; }
-        .item-static { border-left-color: #3498db; color: #2980b9; }
-        
-        .footer {
-            margin-top: 50px;
-            padding: 20px;
-            font-size: 13px;
-            color: #888;
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        /* Header */
+        .header {
             text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .badge-main {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #e0e7ff;
+            color: #4338ca;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 5px 14px;
+            border-radius: 999px;
+            margin-bottom: 12px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 15px;
+            font-weight: 400;
+        }
+
+        /* Controls: Search & Tabs */
+        .controls-wrapper {
+            background: var(--card-bg);
+            padding: 16px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .search-box {
+            position: relative;
+            width: 100%;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 15px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 14px 12px 42px;
+            border-radius: 12px;
+            border: 1.5px solid var(--border-color);
+            background: #f8fafc;
+            font-size: 14.5px;
+            color: var(--text-main);
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            background: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        /* Filter Tabs */
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tab-btn {
+            background: #f1f5f9;
+            border: none;
+            outline: none;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tab-btn:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: #ffffff;
+        }
+
+        .tab-btn .count {
+            background: rgba(0, 0, 0, 0.08);
+            padding: 2px 7px;
+            border-radius: 999px;
+            font-size: 11.5px;
+        }
+
+        .tab-btn.active .count {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+        }
+
+        /* Simulation Grid */
+        .simulation-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 720px) {
+            .simulation-grid {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 23px;
+            }
+        }
+
+        /* Simulation Card */
+        .sim-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sim-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            background: var(--theme-color, #2563eb);
+            border-top-left-radius: var(--radius);
+            border-bottom-left-radius: var(--radius);
+        }
+
+        .sim-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+            border-color: #cbd5e1;
+        }
+
+        .sim-card:hover .sim-arrow {
+            transform: translateX(4px);
+            color: var(--primary);
+        }
+
+        /* Icon Container */
+        .sim-icon-box {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            border-radius: 14px;
+            background: var(--theme-bg, #eff6ff);
+            color: var(--theme-color, #2563eb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 21px;
+            transition: transform 0.2s ease;
+        }
+
+        .sim-card:hover .sim-icon-box {
+            transform: scale(1.08);
+        }
+
+        /* Content info */
+        .sim-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .sim-badges {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 5px;
+        }
+
+        .badge-grade {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 6px;
+            background: #f1f5f9;
+            color: #475569;
+            text-transform: uppercase;
+        }
+
+        .badge-grade.g10 {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .badge-grade.g11 {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .badge-grade.g12 {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .badge-tag {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 6px;
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .sim-title {
+            font-size: 15.5px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 4px;
+            line-height: 1.35;
+        }
+
+        .sim-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .sim-arrow {
+            color: #cbd5e1;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            margin-left: 4px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 45px 20px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            color: var(--text-muted);
+            border: 1px dashed var(--border-color);
+        }
+
+        .empty-state i {
+            font-size: 38px;
+            color: #cbd5e1;
+            margin-bottom: 12px;
+        }
+
+        .empty-state p {
+            font-size: 15px;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 45px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
             line-height: 1.6;
         }
-.icon-box .material-symbols-outlined, .icon-box svg {
-    color: #f39c12; /* Màu cam đặc trưng của LDR */
-}
-    
-</style>
+
+        .footer strong {
+            color: #64748b;
+        }
+
+        .footer-line {
+            width: 40px;
+            height: 2px;
+            background: #e2e8f0;
+            margin: 0 auto 12px;
+            border: none;
+        }
+    </style>
 </head>
 <body>
 
-    <div class="header">
+<div class="container">
+    <!-- Header -->
+    <header class="header">
+        <div class="badge-main">
+            <i class="fa-solid fa-atom"></i> Kho Học Liệu Số THPT
+        </div>
         <h1>Hệ Thống Mô Phỏng Vật Lý</h1>
-        <p>Nâng cao năng lực số - Cá nhân hóa người học</p>
+        <p>Mô hình trực quan tương tác - Nâng cao năng lực số học sinh</p>
+    </header>
+
+    <!-- Controls: Search & Grade Tabs -->
+    <div class="controls-wrapper">
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchInput" class="search-input" placeholder="Tìm kiếm mô phỏng (vd: rơi tự do, giao thoa, LDR, rutherford, con lắc...)">
+        </div>
+
+        <div class="tabs" id="tabContainer">
+            <button class="tab-btn active" data-filter="all">
+                <i class="fa-solid fa-layer-group"></i> Tất cả <span class="count" id="countAll">0</span>
+            </button>
+            <button class="tab-btn" data-filter="10">
+                Vật lý 10 <span class="count" id="count10">0</span>
+            </button>
+            <button class="tab-btn" data-filter="11">
+                Vật lý 11 <span class="count" id="count11">0</span>
+            </button>
+            <button class="tab-btn" data-filter="12">
+                Vật lý 12 <span class="count" id="count12">0</span>
+            </button>
+        </div>
     </div>
 
-    <div class="menu-container">
+    <!-- Simulation Cards Grid -->
+    <main class="simulation-grid" id="simGrid">
+        <!-- Render tự động từ danh sách dữ liệu JavaScript -->
+    </main>
 
-  <a href="thi_nghiem_do_toc_do_vat_vat_li_10.html" class="menu-item item-static">
-            <div class="icon-box"><i class="fa-solid fa-bolt"></i></div>
-            <div class="text-box">
-                <span class="title">ĐỘNG HỌC</span>
-                <span class="subtitle"> Vật lý 10: THỰC HẢNH ẢO - ĐO TỐC ĐỘ TRUNG BÌNH - TỐC ĐỘ TỨC THỜI</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
-
-  <a href="mo_phong_roi_tu_do.html" class="menu-item item-static">
-            <div class="icon-box"><i class="fa-solid fa-bolt"></i></div>
-            <div class="text-box">
-                <span class="title">ĐỘNG HỌC</span>
-                <span class="subtitle"> Vật lý 10: Mô phỏng rơi tự do</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
-         <a href="do_dich_chuyen.html" class="menu-item item-static">
-            <div class="icon-box"><i class="fa-solid fa-bolt"></i></div>
-            <div class="text-box">
-                <span class="title">ĐỘNG HỌC</span>
-                <span class="subtitle"> Vật lý 10: độ dịch chuyển</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
- <a href="mo_phong_song_3_che_do_hoan_chinh.html" class="menu-item item-static">
-            <div class="icon-box"><i class="fa-solid fa-bolt"></i></div>
-            <div class="text-box">
-                <span class="title">sóng dọc - sóng ngang</span>
-                <span class="subtitle"> Vật lý 11: Mô phỏng sóng dọc  - sóng ngang</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
-    <a href="mo_phong_giao_thoa_do_buoc_song.html" class="menu-item item-static">
-            <div class="icon-box"><i class="fa-solid fa-bolt"></i></div>
-            <div class="text-box">
-                <span class="title">sóng ánh sáng</span>
-                <span class="subtitle"> Vật lý 11: Mô phỏng giao thoa ánh sáng</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>    
-        <a href="may_phat_dien_AC_good.html" class="menu-item item-generator">
-            <div class="icon-box"><i class="fa-solid fa-bolt"></i></div>
-            <div class="text-box">
-                <span class="title">Máy phát điện xoay chiều</span>
-                <span class="subtitle"> Vật lý 12: Mô phỏng cảm ứng điện từ & đồ thị hình sin</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
-
- <a href="tan-xa-alpha-rutherford.html" class="menu-item item-generator">
-            <div class="icon-box"><i class="fa-solid fa-bolt"></i></div>
-            <div class="text-box">
-                <span class="title">Máy phát điện xoay chiều</span>
-                <span class="subtitle"> Vật lý 12: Mô phỏng cảm ứng điện từ & đồ thị hình sin</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
-   <a href="hien_tuong_cam_ung_dien_tu_good.html" class="menu-item item-magnet">
-            <div class="icon-box"><i class="fa-solid fa-magnet"></i></div>
-            <div class="text-box">
-                <span class="title">Hiện tượng cảm ứng điện từ</span>
-                <span class="subtitle">Vật lý 12: Định luật Faraday & Định luật Lenz</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
-<a href="thi-nghiem-do-nhiet-nong-chay-rieng(1).html" class="menu-item item-magnet">
-            <div class="icon-box"><i class="fa-solid fa-magnet"></i></div>
-            <div class="text-box">
-                <span class="title">Đo nhiệt nóng chảy riêng</span>
-                <span class="subtitle">Vật lý 12: Đo nhiệt nóng chảy riêng</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
-        <a href="thi-nghiem-do-nhiet-nong-chay-rieng(2).html" class="menu-item item-magnet">
-            <div class="icon-box"><i class="fa-solid fa-magnet"></i></div>
-            <div class="text-box">
-                <span class="title">Đo nhiệt nóng chảy riêng(có đồ thị)</span>
-                <span class="subtitle">Vật lý 12: Đo nhiệt nóng chảy riêng</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
- <a href="dao_dong_dieu_hoa_3_che_do_mobile_dieu_khien_giua.html" class="menu-item item-generator">
-            <div class="icon-box"><i class="fa-solid fa-bolt"></i></div>
-            <div class="text-box">
-                <span class="title">DAO ĐỘNG CON LẮC - ĐỒ THỊ</span>
-                <span class="subtitle">Vật lý 11: DAO ĐỘNG ĐIỀU HÒA</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
-
-
-<a href="ung-dug-LDR-1-chieu.html" class="menu-item item-generator">
-            <div class="icon-box">
-  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="9"></circle>
-    <path d="M7 12h2l2-3 2 6 2-3h2"></path>
-    <path d="M18 5l2-2"></path>
-    <path d="M14 2l1 2"></path>
-  </svg>
-</div>
-            <div class="text-box">
-                <span class="title">Ứng dụng cảm biến ánh sáng (cơ bản)</span>
-                <span class="subtitle">Vật lý 11: Mô phỏng ứng dụng LDR vào bật tắt đèn tự động</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
-
-        <a href="ung-dung-LDR-2-chieu.html" class="menu-item item-circuit">
-            <div class="icon-box"><span class="material-symbols-outlined">sensors</span></div>
-            <div class="text-box">
-                <span class="title">Ứng dụng cảm biến ánh sáng (nâng cao)</span>
-                <span class="subtitle">Vật lý 11: Mô phỏng ứng dụng LDR vào bật tắt đèn tự động</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
-
-       
-
-        <a href="do_e_r_good.html" class="menu-item item-circuit">
-            <div class="icon-box"><i class="fa-solid fa-battery-full"></i></div>
-            <div class="text-box">
-                <span class="title">Thí nghiệm mạch điện một chiều</span>
-                <span class="subtitle">Vật lý 11: Xác định suất điện động (E) và điện trở trong (r)</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
-
-     
-        <a href="dien_truong_duong_suc.html" class="menu-item item-electric-field">
-            <div class="icon-box"><i class="fa-solid fa-bolt-lightning"></i></div>
-            <div class="text-box">
-                <span class="title">Đường sức điện trường</span>
-                <span class="subtitle">Vật lý 11: Trực quan hóa điện trường</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
-
-        <a href="nhiem_dien_huong_ung.html" class="menu-item item-static">
-            <div class="icon-box"><i class="fa-solid fa-atom"></i></div>
-            <div class="text-box">
-                <span class="title">Nhiễm điện do hưởng ứng</span>
-                <span class="subtitle">Vật lý 11: Sự phân bố lại điện tích</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
-
-        <a href="nhiem_dien_tiep_xuc_good.html" class="menu-item item-static">
-            <div class="icon-box"><i class="fa-solid fa-hand-sparkles"></i></div>
-            <div class="text-box">
-                <span class="title">Nhiễm điện do tiếp xúc</span>
-                <span class="subtitle">Vật lý 11: Trao đổi điện tích giữa các vật</span>
-            </div>
-            <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-        </a>
-    </div>
-
-    <div class="footer">
-        <hr style="width: 50px; border: 1px solid #ddd; margin-bottom: 15px;">
+    <!-- Footer -->
+    <footer class="footer">
+        <hr class="footer-line">
         &copy; 2026 - Tác giả: <strong>[NVH-DTTH]</strong><br>
         Trường THPT Hùng Vương - Tổ Vật Lý
-    </div>
+    </footer>
+</div>
+
+<script>
+/**
+ * =========================================================================
+ * BẢNG MÀU CHỦ ĐỀ CÓ SẴN (THEMES)
+ * Dễ dàng gán cho bài học: 'amber', 'orange', 'blue', 'purple', 'emerald', 'cyan', 'rose'
+ * =========================================================================
+ */
+const COLOR_THEMES = {
+    amber:   { color: "#d97706", bg: "#fef3c7" }, // Vàng điện năng / ánh sáng
+    orange:  { color: "#ea580c", bg: "#ffedd5" }, // Cam từ trường / nam châm / nhiệt học
+    blue:    { color: "#2563eb", bg: "#eff6ff" }, // Xanh dương tĩnh điện / động học
+    purple:  { color: "#9333ea", bg: "#f3e8ff" }, // Tím điện trường / lượng tử
+    emerald: { color: "#059669", bg: "#d1fae5" }, // Xanh lá mạch điện / đo lường
+    cyan:    { color: "#0891b2", bg: "#cffafe" }, // Xanh ngọc cảm biến / sóng
+    rose:    { color: "#e11d48", bg: "#ffe4e6" }  // Đỏ hồng dao động điều hòa
+};
+
+/**
+ * =========================================================================
+ * 📋 MẪU THÊM BÀI MỚI (CHỈ CẦN COPY KHỐI NÀY VÀ DÁN VÀO DANH SÁCH BÊN DƯỚI):
+ * =========================================================================
+ *  {
+ *      title: "Tên bài mô phỏng mới",
+ *      desc: "Mô tả ngắn gọn nội dung bài học",
+ *      grade: "10", // "10", "11" hoặc "12"
+ *      tag: "Quang học", // Tag phụ: Cơ bản, Nâng cao, Thí nghiệm... (hoặc để "")
+ *      file: "ten_file.html",
+ *      icon: "fa-solid fa-lightbulb", // Chọn 1 icon ở bảng bên dưới
+ *      theme: "amber" // Chọn 1 màu ở bảng bên dưới: amber, orange, blue, purple, emerald, cyan, rose
+ *  },
+ * 
+ * =========================================================================
+ * 🎯 KHO ICON VẬT LÝ CÓ SẴN (CHỈ CẦN COPY TÊN ICON DÁN VÀO):
+ * =========================================================================
+ * ⚡ 1. ĐIỆN HỌC & TỪ HỌC:
+ *    - "fa-solid fa-bolt"               : Tia sét, điện năng, máy phát điện
+ *    - "fa-solid fa-magnet"             : Nam châm, từ trường, cảm ứng từ
+ *    - "fa-solid fa-car-battery"        : Nguồn điện, pin, ắc quy, suất điện động
+ *    - "fa-solid fa-charging-station"   : Tụ điện, nạp xả năng lượng
+ *    - "fa-solid fa-plug"               : Ổ cắm, dòng điện dân dụng
+ *    - "fa-solid fa-arrows-rotate"      : Khung dây quay, động cơ điện
+ *    - "fa-solid fa-circle-nodes"       : Đường sức điện, mạng điện
+ * 
+ * 🌊 2. DAO ĐỘNG, SÓNG & CƠ HỌC:
+ *    - "fa-solid fa-wave-square"        : Đồ thị hình sin, dao động điều hòa
+ *    - "fa-solid fa-water"              : Sóng cơ, sóng dọc, sóng ngang
+ *    - "fa-solid fa-weight-hanging"     : Con lắc đơn, lò xo, trọng lực, quả nặng
+ *    - "fa-solid fa-stopwatch"          : Đo tốc độ, chu kỳ, tần số, thời gian
+ *    - "fa-solid fa-gauge-high"         : Vận tốc, tốc độ tức thời, gia tốc
+ *    - "fa-solid fa-arrow-down-long"    : Rơi tự do, gia tốc trọng trường
+ *    - "fa-solid fa-route"              : Độ dịch chuyển, quãng đường
+ * 
+ * 💡 3. QUANG HỌC & BỨC XẠ:
+ *    - "fa-solid fa-sun"                : Ánh sáng mặt trời, quang trở LDR
+ *    - "fa-solid fa-lightbulb"          : Bóng đèn, phát quang, quang điện
+ *    - "fa-solid fa-rainbow"            : Giao thoa ánh sáng, quang phổ, tán sắc
+ *    - "fa-solid fa-glasses"            : Thấu kính, lăng kính, kính mắt
+ *    - "fa-solid fa-eye"                : Mắt, tật khúc xạ, góc trông ảnh
+ *    - "fa-solid fa-laser"              : Nguồn phát laser, tia sáng hẹp
+ * 
+ * ⚛️ 4. TĨNH ĐIỆN, NGUYÊN TỬ & HẠT NHÂN:
+ *    - "fa-solid fa-atom"               : Cấu trúc nguyên tử, electron, hạt vi mô
+ *    - "fa-solid fa-circle-radiation"   : Tán xạ alpha, hạt nhân, phóng xạ
+ *    - "fa-solid fa-handshake-angle"    : Tiếp xúc điện tích, va chạm hạt
+ * 
+ * 🔥 5. NHIỆT HỌC & BIẾN ĐỔI TRẠNG THÁI:
+ *    - "fa-solid fa-temperature-arrow-up": Đo nhiệt nóng chảy riêng, nhiệt lượng
+ *    - "fa-solid fa-chart-line"         : Đồ thị nhiệt độ theo thời gian
+ *    - "fa-solid fa-fire"               : Nhiệt năng, công suất nhiệt
+ * 
+ * 🛠️ 6. MẠCH ĐIỆN, CẢM BIẾN & THỰC HÀNH:
+ *    - "fa-solid fa-sliders"            : Biến trở, chiết áp, điều chỉnh thông số
+ *    - "fa-solid fa-microchip"          : Bán dẫn, IC, cảm biến thông minh
+ *    - "fa-solid fa-ruler-combined"     : Dụng cụ đo, thước kẹp, xử lý sai số
+ * =========================================================================
+ */
+const SIMULATIONS = [
+    // ==========================================
+    // --- VẬT LÝ 10 ---
+    // ==========================================
+    {
+        title: "Đo tốc độ trung bình & tức thời",
+        desc: "Thực hành ảo: sử dụng đồng hồ đo thời gian hiện số và cổng quang điện trong động học.",
+        grade: "10",
+        tag: "Thực hành",
+        file: "thi_nghiem_do_toc_do_vat_vat_li_10.html",
+        icon: "fa-solid fa-stopwatch",
+        theme: "emerald"
+    },
+    {
+        title: "Mô phỏng sự rơi tự do",
+        desc: "Khảo sát chuyển động rơi nhanh dần đều dưới tác dụng trọng lực và đồ thị vận tốc.",
+        grade: "10",
+        tag: "Động học",
+        file: "mo_phong_roi_tu_do.html",
+        icon: "fa-solid fa-arrow-down-long",
+        theme: "blue"
+    },
+    {
+        title: "Độ dịch chuyển & Quãng đường",
+        desc: "Trực quan hóa sự khác biệt giữa độ dịch chuyển (vectơ) và quãng đường trong chuyển động thẳng.",
+        grade: "10",
+        tag: "Động học",
+        file: "do_dich_chuyen.html",
+        icon: "fa-solid fa-route",
+        theme: "purple"
+    },
+
+    // ==========================================
+    // --- VẬT LÝ 11 ---
+    // ==========================================
+    {
+        title: "Mô phỏng sóng dọc & sóng ngang",
+        desc: "Trực quan hóa phương dao động phần tử môi trường so với phương truyền sóng (3 chế độ).",
+        grade: "11",
+        tag: "Sóng cơ",
+        file: "mo_phong_song_3_che_do_hoan_chinh.html",
+        icon: "fa-solid fa-water",
+        theme: "cyan"
+    },
+    {
+        title: "Giao thoa ánh sáng & Đo bước sóng",
+        desc: "Thí nghiệm giao thoa khe Young: khảo sát vân sáng, vân tối và xác định bước sóng ánh sáng.",
+        grade: "11",
+        tag: "Sóng ánh sáng",
+        file: "mo_phong_giao_thoa_do_buoc_song.html",
+        icon: "fa-solid fa-rainbow",
+        theme: "purple"
+    },
+    {
+        title: "Dao động con lắc & Đồ thị",
+        desc: "Mô phỏng dao động điều hòa của con lắc (3 chế độ tương tác) và đồ thị li độ - thời gian.",
+        grade: "11",
+        tag: "Dao động",
+        file: "dao_dong_dieu_hoa_3_che_do_mobile_dieu_khien_giua.html",
+        icon: "fa-solid fa-wave-square",
+        theme: "rose"
+    },
+    {
+        title: "Cảm biến ánh sáng LDR (Cơ bản)",
+        desc: "Khảo sát nguyên lý quang điện trở LDR trong mạch tự động bật/tắt đèn chiếu sáng.",
+        grade: "11",
+        tag: "Cơ bản",
+        file: "ung-dug-LDR-1-chieu.html",
+        icon: "fa-solid fa-sun",
+        theme: "amber"
+    },
+    {
+        title: "Cảm biến ánh sáng LDR (Nâng cao)",
+        desc: "Mô phỏng mạch phân áp điều khiển nhạy sáng với các ngưỡng kích hoạt tự động.",
+        grade: "11",
+        tag: "Nâng cao",
+        file: "ung-dung-LDR-2-chieu.html",
+        icon: "fa-solid fa-sliders",
+        theme: "cyan"
+    },
+    {
+        title: "Thí nghiệm mạch điện một chiều",
+        desc: "Xác định suất điện động (E) và điện trở trong (r) của nguồn điện qua định luật Ohm.",
+        grade: "11",
+        tag: "Thực hành",
+        file: "do_e_r_good.html",
+        icon: "fa-solid fa-car-battery",
+        theme: "emerald"
+    },
+    {
+        title: "Đường sức điện trường",
+        desc: "Trực quan hóa vectơ cường độ điện trường và phân bố các đường sức điện của hệ điện tích.",
+        grade: "11",
+        tag: "Điện trường",
+        file: "dien_truong_duong_suc.html",
+        icon: "fa-solid fa-circle-nodes",
+        theme: "purple"
+    },
+    {
+        title: "Nhiễm điện do hưởng ứng",
+        desc: "Quan sát sự phân bố lại điện tích trong vật dẫn khi đặt gần vật mang điện.",
+        grade: "11",
+        tag: "Tĩnh điện",
+        file: "nhiem_dien_huong_ung.html",
+        icon: "fa-solid fa-atom",
+        theme: "blue"
+    },
+    {
+        title: "Nhiễm điện do tiếp xúc",
+        desc: "Mô phỏng cơ chế truyền và cân bằng điện tích giữa các vật thể khi tiếp xúc trực tiếp.",
+        grade: "11",
+        tag: "Tĩnh điện",
+        file: "nhiem_dien_tiep_xuc_good.html",
+        icon: "fa-solid fa-handshake-angle",
+        theme: "blue"
+    },
+
+    // ==========================================
+    // --- VẬT LÝ 12 ---
+    // ==========================================
+    {
+        title: "Máy phát điện xoay chiều",
+        desc: "Mô phỏng hiện tượng cảm ứng điện từ và tạo đồ thị dòng điện xoay chiều hình sin.",
+        grade: "12",
+        tag: "Điện xoay chiều",
+        file: "may_phat_dien_AC_good.html",
+        icon: "fa-solid fa-bolt",
+        theme: "amber"
+    },
+    {
+        title: "Thí nghiệm tán xạ hạt Alpha (Rutherford)",
+        desc: "Bắn phá lá vàng bằng hạt alpha, khám phá hạt nhân nguyên tử và cấu tạo nguyên tử.",
+        grade: "12",
+        tag: "Vật lý hạt nhân",
+        file: "tan-xa-alpha-rutherford.html",
+        icon: "fa-solid fa-circle-radiation",
+        theme: "purple"
+    },
+    {
+        title: "Hiện tượng cảm ứng điện từ",
+        desc: "Trực quan hóa từ thông biến thiên, Định luật Faraday và Định luật Lenz.",
+        grade: "12",
+        tag: "Từ trường",
+        file: "hien_tuong_cam_ung_dien_tu_good.html",
+        icon: "fa-solid fa-magnet",
+        theme: "orange"
+    },
+    {
+        title: "Đo nhiệt nóng chảy riêng",
+        desc: "Thực hành nhiệt lượng kế xác định nhiệt nóng chảy riêng của nước đá theo chương trình mới.",
+        grade: "12",
+        tag: "Nhiệt học",
+        file: "thi-nghiem-do-nhiet-nong-chay-rieng(1).html",
+        icon: "fa-solid fa-temperature-arrow-up",
+        theme: "orange"
+    },
+    {
+        title: "Đo nhiệt nóng chảy riêng (Có đồ thị)",
+        desc: "Khảo sát quá trình chuyển thể pha rắn - lỏng và vẽ đồ thị nhiệt độ theo thời gian.",
+        grade: "12",
+        tag: "Nhiệt học",
+        file: "thi-nghiem-do-nhiet-nong-chay-rieng(2).html",
+        icon: "fa-solid fa-chart-line",
+        theme: "orange"
+    }
+];
+
+// Biến lưu trạng thái lọc
+let currentFilter = "all";
+let searchQuery = "";
+
+// Cập nhật số lượng đếm trên Tabs
+function updateCounts() {
+    document.getElementById("countAll").textContent = SIMULATIONS.length;
+    document.getElementById("count10").textContent = SIMULATIONS.filter(s => s.grade === "10").length;
+    document.getElementById("count11").textContent = SIMULATIONS.filter(s => s.grade === "11").length;
+    document.getElementById("count12").textContent = SIMULATIONS.filter(s => s.grade === "12").length;
+}
+
+// Hàm render danh sách thẻ bài học
+function renderCards() {
+    const grid = document.getElementById("simGrid");
+    grid.innerHTML = "";
+
+    const filtered = SIMULATIONS.filter(sim => {
+        const matchFilter = (currentFilter === "all") || (sim.grade === currentFilter);
+        const q = searchQuery.toLowerCase().trim();
+        const matchSearch = !q || 
+            sim.title.toLowerCase().includes(q) || 
+            sim.desc.toLowerCase().includes(q) ||
+            sim.grade.includes(q) ||
+            (sim.tag && sim.tag.toLowerCase().includes(q));
+
+        return matchFilter && matchSearch;
+    });
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <i class="fa-solid fa-box-open"></i>
+                <p>Không tìm thấy bài mô phỏng nào phù hợp với từ khóa "<strong>${searchQuery}</strong>".</p>
+            </div>
+        `;
+        return;
+    }
+
+    filtered.forEach(item => {
+        const themeConfig = COLOR_THEMES[item.theme] || COLOR_THEMES.blue;
+        const card = document.createElement("a");
+        card.href = item.file;
+        card.className = "sim-card";
+        card.style.setProperty("--theme-color", themeConfig.color);
+        card.style.setProperty("--theme-bg", themeConfig.bg);
+
+        card.innerHTML = `
+            <div class="sim-icon-box">
+                <i class="${item.icon}"></i>
+            </div>
+            <div class="sim-info">
+                <div class="sim-badges">
+                    <span class="badge-grade g${item.grade}">Lớp ${item.grade}</span>
+                    ${item.tag ? `<span class="badge-tag">${item.tag}</span>` : ""}
+                </div>
+                <div class="sim-title">${item.title}</div>
+                <div class="sim-desc">${item.desc}</div>
+            </div>
+            <div class="sim-arrow">
+                <i class="fa-solid fa-chevron-right"></i>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+// Xử lý sự kiện Tabs
+document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentFilter = btn.getAttribute("data-filter");
+        renderCards();
+    });
+});
+
+// Xử lý ô tìm kiếm
+document.getElementById("searchInput").addEventListener("input", (e) => {
+    searchQuery = e.target.value;
+    renderCards();
+});
+
+// Khởi chạy ban đầu
+updateCounts();
+renderCards();
+</script>
 
 </body>
 </html>
-
-
